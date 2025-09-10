@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>清大選課小幫手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-wrapper">
+    <div class="page active" id="schedule-page" style="width: 650px;">
+      <header>
+      <h1>清大選課助理</h1>
+      <p class="version">版本 1.0</p>
+    </header>
+      <header class="page-header">
+        <h1 style="padding-left: 95px;">我的課表</h1>
+        <button id="toggle-weekend-btn" class="weekend-toggle-btn">顯示週末</button>
+        <button id="go-to-settings" class="nav-btn" title="設定">⚙️</button>
+      </header>
+      <div id="schedule-container" class="page-content">
+        <p class="loading-text">正在載入課表...</p>
+      </div>
+    </div>
+
+    <div class="page" id="settings-page" style="width: 350px;">
+      
+      <header class="page-header">
+        <button id="go-to-schedule" class="nav-btn" title="返回課表">←</button>
+        <h1 style="padding-right: 30px;">功能設定</h1>
+      </header>
+      <div class="page-content">
+        <main class="settings">
+          <div class="setting-item">
+            <label for="allow-ge-clash">自動允許通識課程衝堂</label>
+            <input type="checkbox" id="allow-ge-clash" />
+          </div>
+          <div class="setting-item column-layout">
+            <label for="frameset-ratio">自動調整選課頁面框架比例</label>
+            <div class="slider-container">
+              <span>上方 (課程列表)</span>
+              <input type="range" id="frameset-ratio" min="0" max="900" step="10">
+              <span>下方 (已選課表)</span>
+            </div>
+            <button id="save-ratio-btn" class="save-btn">套用</button>
+          </div>
+          </main>
+        <hr>
+        <section class="support">
+          <h2>支持開發者</h2>
+          <p>如果這個工具對你有幫助，可以考慮<a href="YOUR_SUPPORT_LINK_HERE" target="_blank">請我喝杯咖啡</a>！</p>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

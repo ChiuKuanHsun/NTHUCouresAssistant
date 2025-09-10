@@ -1,0 +1,391 @@
+/* popup/popup.css */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  width: 280px;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+.container {
+  padding: 15px;
+}
+
+header {
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+h1 {
+  font-size: 1.2em;
+  margin: 0;
+  color: #2c3e50;
+}
+
+.version {
+  font-size: 0.8em;
+  color: #7f8c8d;
+}
+
+.settings h2, .support h2 {
+  font-size: 1em;
+  color: #34495e;
+  margin-top: 0;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.support p {
+  font-size: 0.9em;
+}
+
+a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+body {
+    width: auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    padding: 15px;
+}
+
+header {
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+h1 {
+    font-size: 1.2em;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.version {
+    font-size: 0.8em;
+    color: #7f8c8d;
+}
+
+.settings h2, .support h2, .schedule-display h2 {
+    font-size: 1em;
+    color: #34495e;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.support p {
+    font-size: 0.9em;
+}
+
+a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #f0f0f0;
+    margin: 20px 0;
+}
+
+/* --- 【重構】新的課表 Grid 樣式 --- */
+
+#schedule-container .no-schedule-msg {
+    color: #888;
+    text-align: center;
+    padding: 20px;
+}
+
+/* 用於包裹背景和課程層的相對定位容器 */
+.schedule-wrapper {
+    position: relative;
+    margin-top: 10px;
+}
+
+/* 背景網格 和 課程層 共享相同的網格定義 */
+.timetable-grid,
+.course-layer {
+    display: grid;
+    grid-template-columns: 35px repeat(7, 1fr); /* 時間標籤欄 + 7天 */
+    grid-template-rows: 25px repeat(14, 40px); /* 星期標籤行 + 14節課 */
+}
+
+/* 課程層是絕對定位，疊在背景層之上 */
+.course-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* 讓滑鼠可以點擊到課程區塊 */
+}
+
+.grid-cell {
+    border-right: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.timetable-grid .grid-cell:nth-child(8n) { border-right: none; }
+.timetable-grid .grid-cell:nth-last-child(-n+8) { border-bottom: none; }
+
+.empty-corner, .day-label, .time-label-vertical {
+    background-color: #f7f9fa;
+    color: #555;
+    font-weight: bold;
+}
+
+.day-label {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.time-label-vertical {
+    border-right: 1px solid #e0e0e0;
+}
+
+/* 課程區塊樣式 */
+.course-block {
+    margin: 2px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1.3;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 1;
+    pointer-events: auto; /* 讓課程區塊本身可以被互動 */
+}
+
+.course-block strong {
+    font-weight: bold;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.course-block span {
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 不同課程的配色 */
+.course-block {
+    background-color: #5d9cec; /* 預設藍色 */
+    border: 1px solid #4a89dc;
+}
+.course-block.ge {
+    background-color: #f6bb42; /* 通識課橘黃色 */
+    border: 1px solid #e6a32e;
+}
+
+
+/* 【新增】主包裹容器，用於實現動畫 */
+.popup-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden; /* 隱藏滑出頁面，這是動畫的關鍵 */
+}
+
+/* 【新增】所有頁面的通用樣式 */
+.page {
+    width: 100%;
+    position: absolute; /* 讓頁面可以重疊 */
+    top: 0;
+    left: 0;
+    background-color: #fff;
+    padding: 15px;
+    box-sizing: border-box;
+    transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out;
+}
+
+/* 【新增】頁面切換的動畫邏輯 */
+/* 非當前頁面的初始狀態 (在右邊) */
+.page:not(.active) {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+/* 當前頁面的狀態 */
+.page.active {
+    transform: translateX(0);
+    opacity: 1;
+    position: relative; /* 讓 active 的頁面撐開 wrapper 高度 */
+}
+/* 從設定頁返回課表頁的動畫方向調整 */
+#settings-page.active ~ #schedule-page {
+    transform: translateX(-100%);
+}
+
+/* --- 頁面通用標頭 --- */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+.page-header h1 {
+    font-size: 1.2em;
+    margin: 0;
+    color: #2c3e50;
+    text-align: center;
+    flex-grow: 1; /* 讓標題佔據中間位置 */
+}
+.nav-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em; /* 放大圖示 */
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+}
+.nav-btn:hover {
+    opacity: 0.7;
+}
+
+/* 讓返回按鈕在左邊，設定按鈕在右邊 */
+#go-to-schedule { order: -1; }
+#go-to-settings { order: 1; }
+
+
+
+
+/* ... (保留您現有的 .settings, .support, hr, .schedule-wrapper, .timetable-grid 等所有課表和設定項目的樣式) ... */
+.schedule-display h2, .settings h2, .support h2 {
+    display: none; /* 標題已移至 page-header，這裡隱藏 */
+}
+
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 5px; /* 縮小與課表的間距 */
+}
+.schedule-header h2 {
+    margin: 0;
+    border-bottom: none;
+}
+.weekend-toggle-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.weekend-toggle-btn:hover {
+    background-color: #e0e0e0;
+}
+
+
+/* 【修改】調整課表 Grid 樣式，預設隱藏週末 */
+.schedule-wrapper {
+    position: relative;
+    margin-top: 10px;
+}
+.timetable-grid, .course-layer {
+    display: grid;
+    /* 預設只顯示週一到週五 */
+    grid-template-columns: 35px repeat(5, 1fr); 
+    grid-template-rows: 25px repeat(14, 40px);
+    transition: grid-template-columns 0.4s ease; /* 加入動畫效果 */
+}
+.course-layer {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+}
+
+/* 【新增】控制週末欄位顯示/隱藏的關鍵CSS */
+/* 預設隱藏第7、8欄 (週六、日) 的所有格子 */
+.grid-cell:nth-child(8n-1), /* 週六 */
+.grid-cell:nth-child(8n) {  /* 週日 */
+    display: none;
+}
+/* 預設隱藏在第7、8欄的課程區塊 */
+.course-block[style*="grid-column: 7;"],
+.course-block[style*="grid-column: 8;"] {
+    display: none;
+}
+
+/* 【新增】當 .weekend-visible class 存在時，顯示週末 */
+.schedule-wrapper.weekend-visible .timetable-grid,
+.schedule-wrapper.weekend-visible .course-layer {
+    grid-template-columns: 35px repeat(7, 1fr); /* 展開為7天 */
+}
+.schedule-wrapper.weekend-visible .grid-cell,
+.schedule-wrapper.weekend-visible .course-block {
+    display: flex; /* 恢復顯示 */
+}
+
+.setting-item.column-layout {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+.slider-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+    font-size: 12px;
+    color: #666;
+}
+.slider-container input[type="range"] {
+    flex-grow: 1;
+}
+.save-btn {
+    align-self: flex-end; /* 按鈕靠右 */
+    padding: 5px 12px;
+    border: 1px solid #3d32a0;
+    background-color: #f7f9fa;
+    color: #3d32a0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+.save-btn:hover {
+    background-color: #3d32a0;
+    color: white;
+}
