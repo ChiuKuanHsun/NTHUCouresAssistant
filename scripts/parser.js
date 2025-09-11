@@ -16,38 +16,69 @@ const NthuCourseParser = {
     },
 
     // 解析單個課程行 (row)
-    parseCourseRow(row) {
-        if (row.cells.length < 13) return null;
+    parseCourseRow(row, columnIndexes) {
+        // 確保所有必要的索引都存在
+        const requiredIndexes = ['id', 'name', 'credit', 'time', 'room', 'teacher', 'restrictions'];
+        for (const key of requiredIndexes) {
+            if (columnIndexes[key] === undefined) {
+                console.warn(`解析課程行失敗：找不到 '${key}' 欄位的索引。`);
+                return null;
+            }
+        }
+        
+        if (row.cells.length < requiredIndexes.length) return null;
 
-        const timeString = row.cells[4].innerText.trim();
-        const courseTitleCellText = row.cells[2].innerText.trim();
-        const isGeCourse = courseTitleCellText.includes('GE course');
-        const restrictionsText = row.cells[12].innerText.trim();
-        const isXClass = restrictionsText.includes('X-Class');
+        const courseTitleCellText = row.cells[columnIndexes.name].innerText;
+        const restrictionsText = row.cells[columnIndexes.restrictions].innerText;
+
+        const isGeCourse = courseTitleCellText.includes('通識') || 
+                             courseTitleCellText.includes('Core GE') || 
+                             courseTitleCellText.includes('Elective GE');
+                             
+        const isXClass = restrictionsText.toUpperCase().includes('X-CLASS');
+
         return {
-            id: row.cells[1].innerText.trim(),
-            name: row.cells[2].innerText.split('\n')[0].trim(),
-            nameEn: row.cells[2].innerText.split('\n')[1]?.trim() || '',
-            credit: row.cells[3].innerText.trim(),
-            time: this.parseTimeCode(timeString), // 使用 parseTimeCode
-            room: row.cells[5].innerText.trim(),
-            teacher: row.cells[6].innerText.trim(),
+            id: row.cells[columnIndexes.id].innerText.trim(),
+            name: courseTitleCellText.split('\n')[0].trim(),
+            nameEn: courseTitleCellText.split('\n')[1]?.trim() || '',
+            credit: row.cells[columnIndexes.credit].innerText.trim(),
+            time: this.parseTimeCode(row.cells[columnIndexes.time].innerText.trim()), 
+            room: row.cells[columnIndexes.room].innerText.trim(),
+            teacher: row.cells[columnIndexes.teacher].innerText.trim(),
             isGe: isGeCourse,
             isXClass: isXClass
         };
     },
 
-    // 解析可加選的課程總表 (topFrame)
+    /**
+     * 【已修改】解析可加選的課程總表，現在會先動態定位欄位。
+     * @param {HTMLTableElement} table - 課程的 <table> 元素。
+     * @returns {Array<Object|null>} - 課程物件陣列。
+     */
     parseCourseTable(table) {
+        // --- 【核心修改】動態尋找欄位索引 ---
+        const headerCells = table.querySelectorAll('thead tr td');
+        const columnIndexes = {};
+        headerCells.forEach((cell, index) => {
+            const cellText = cell.innerText;
+            if (cellText.includes('科號')) columnIndexes.id = index;
+            else if (cellText.includes('科目名稱')) columnIndexes.name = index;
+            else if (cellText.includes('學分')) columnIndexes.credit = index;
+            else if (cellText.includes('時間')) columnIndexes.time = index;
+            else if (cellText.includes('教室')) columnIndexes.room = index;
+            else if (cellText.includes('教師')) columnIndexes.teacher = index;
+            else if (cellText.includes('限制')) columnIndexes.restrictions = index;
+        });
+
         const courses = [];
         const rows = table.querySelectorAll('tbody tr');
         rows.forEach(row => {
-            // 檢查是否是有效的課程行 (例如，排除分隔行)
-            if (row.cells.length > 1 && row.cells[0].querySelector('input[type="button"]')) {
-                const course = this.parseCourseRow(row);
-                courses.push(course);
+            // 檢查是否是有效的課程行
+            if (row.cells.length > 1 && (row.querySelector('input[type="button"]') || row.querySelector('input[type="text"]'))) {
+                const course = this.parseCourseRow(row, columnIndexes);
+                courses.push(course); // 即使是 null 也推入以保持索引對應
             } else {
-                courses.push(null); // 對於非課程行，推入 null 以保持索引對應
+                courses.push(null); 
             }
         });
         return courses;
@@ -58,6 +89,19 @@ const NthuCourseParser = {
         const enrolledTable = mainFrameDoc.getElementById('T1');
         if (!enrolledTable) return [];
 
+        const headerCells = enrolledTable.querySelectorAll('thead tr td');
+        let noteIndex = -1;
+        headerCells.forEach((cell, index) => {
+            if (cell.innerText.includes('備註')) {
+                noteIndex = index;
+            }
+        });
+
+        // 如果找不到 "備註" 欄，就無法判斷 X-Class，給予警告但繼續執行
+        if (noteIndex === -1) {
+            console.warn('警告：在已選課程列表中找不到 "備註" 欄，X-Class 衝堂判斷可能不準確。');
+        }
+
         const enrolledCourses = [];
         const rows = enrolledTable.querySelectorAll('tbody tr');
         rows.forEach(row => {
@@ -67,8 +111,14 @@ const NthuCourseParser = {
                 const timeString = row.cells[4].innerText.trim();
                 const courseTitleCellText = row.cells[2].innerText.trim();
                 const isGeCourse = courseTitleCellText.includes('GE course');
-                const noteText = row.cells[10] ? row.cells[10].innerText.trim() : '';
-                const isXClass = noteText.includes('X-Class');
+                //const noteText = row.cells[10] ? row.cells[10].innerText.trim() : '';
+                //const isXClass = noteText.includes('X-Class');
+                let isXClass = false;
+                // 使用動態索引來取得備註欄位的資料
+                if (noteIndex !== -1 && row.cells[noteIndex]) {
+                    const noteText = row.cells[noteIndex].innerText;
+                    isXClass = noteText.toUpperCase().includes('X-CLASS');
+                }
 
                 enrolledCourses.push({
                     id: courseId,
@@ -90,23 +140,20 @@ const NthuCourseParser = {
         try {
             console.log(`正在為系所 ${departmentId} 獲取即時人數...`);
 
-            // 1. 從 topFrame 獲取 ACIXSTORE session token
             const acixstore = window.top.frames['topFrame']?.document.querySelector('input[name="ACIXSTORE"]')?.value;
             if (!acixstore) {
                 console.error("無法獲取 ACIXSTORE token。");
                 return new Map();
             }
 
-            // 2. 準備 POST request 的 FormData
             const formData = new FormData();
             formData.append('ACIXSTORE', acixstore);
             formData.append('select', departmentId);
             formData.append('act', '1');
-            formData.append('Submit', 'Submit'); // 這個值不重要
+            formData.append('Submit', 'Submit');
 
             const url = 'https://www.ccxp.nthu.edu.tw/ccxp/COURSE/JH/7/7.2/7.2.7/JH727002.php';
 
-            // 3. 發送 fetch 請求
             const response = await fetch(url, {
                 method: 'POST',
                 body: formData
@@ -116,28 +163,46 @@ const NthuCourseParser = {
                 throw new Error(`伺服器錯誤: ${response.status}`);
             }
 
-            // 4. 將回傳的 Big5 編碼 HTML 解碼
             const buffer = await response.arrayBuffer();
             const decoder = new TextDecoder('big5');
             const htmlText = decoder.decode(buffer);
 
-            // 5. 解析 HTML 並提取資料
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, 'text/html');
-            const courseRows = doc.querySelectorAll('table.sortable tr.word');
             
+            const headerCells = doc.querySelectorAll('table.sortable tr.class2 td');
+            const columnIndexes = {};
+            
+            headerCells.forEach((cell, index) => {
+                const cellText = cell.innerText;
+                if (cellText.includes('科號')) {
+                    columnIndexes.id = index;
+                } else if (cellText.includes('目前選上人數')) {
+                    columnIndexes.enrolled = index;
+                } else if (cellText.includes('目前待亂數人數')) {
+                    columnIndexes.waiting = index;
+                }
+            });
+
+            // 檢查是否成功找到所有必要的欄位
+            if (columnIndexes.id === undefined || columnIndexes.enrolled === undefined || columnIndexes.waiting === undefined) {
+                console.error('無法從回傳的 HTML 中定位必要的欄位標頭。');
+                return new Map();
+            }
+            // --- 修改結束 ---
+
+            const courseRows = doc.querySelectorAll('table.sortable tr.word');
             const countsMap = new Map();
 
             courseRows.forEach(row => {
                 const cells = row.querySelectorAll('td');
-                if (cells.length >= 8) { // 確保有足夠的欄位
-                    // 科號在第 1 個 cell (index 0)
-                    const courseId = cells[0].textContent.trim().replace(/\s+/g, '');
-                    // 目前選上人數在第 6 個 cell (index 5)
-                    const enrolledText = cells[5].textContent.trim();
+                // 使用動態索引來取得資料
+                if (cells.length > Math.max(columnIndexes.id, columnIndexes.enrolled, columnIndexes.waiting)) {
+                    const courseId = cells[columnIndexes.id].textContent.trim().replace(/\s+/g, '');
+                    const enrolledText = cells[columnIndexes.enrolled].textContent.trim();
+                    const waitingText = cells[columnIndexes.waiting].textContent.trim();
+                    
                     const enrolled = parseInt(enrolledText, 10);
-                    // 待亂數人數在第 8 個 cell (index 7)
-                    const waitingText = cells[7].textContent.trim();
                     const waiting = parseInt(waitingText, 10);
 
                     if (courseId && !isNaN(enrolled) && !isNaN(waiting)) {
@@ -151,7 +216,7 @@ const NthuCourseParser = {
 
         } catch (error) {
             console.error("抓取或解析即時人數時發生錯誤:", error);
-            return new Map(); // 發生錯誤時回傳空的 Map
+            return new Map();
         }
     }
 

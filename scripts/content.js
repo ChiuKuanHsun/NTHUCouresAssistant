@@ -45,6 +45,8 @@ function main() {
     const filterUI = NthuCourseHelperUI.createFilterUI(isGePage);
     courseTable.parentNode.insertBefore(filterUI, courseTable);
     
+    NthuCourseHelperUI.injectLiveCountColumn(courseTable);
+
     // 2. 解析可加選課程
     const courses = NthuCourseParser.parseCourseTable(courseTable);
     NthuCourseHelperUI.injectSearchButtons(courseTable, courses);
@@ -89,7 +91,42 @@ function setupEventListeners(courses, table, backToTopButton) {
     const allowGeClashCheckbox = document.getElementById('nthu-helper-allow-ge-clash');
     const strictFilterCheckbox = document.getElementById('nthu-helper-strict-filter');
     const allowXClassClashCheckbox = document.getElementById('nthu-helper-allow-xclass-clash');
+    const refreshBtn = document.getElementById('nthu-helper-refresh-counts-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.textContent = '更新中...';
+            refreshBtn.disabled = true;
 
+            // 顯示所有課程的 loading spinner
+            document.querySelectorAll('.live-count-cell').forEach(cell => {
+                cell.innerHTML = `<div class="spinner"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>`;
+            });
+
+            // 取得目前頁面的系所代碼
+            const deptSelect = document.querySelector('select[name="new_dept"]');
+            const departmentId = deptSelect.value.trim();
+
+            const countsMap = await NthuCourseParser.fetchAndParseCounts(departmentId);
+
+            // 更新頁面上的數字
+            countsMap.forEach((data, courseId) => {
+                const cell = document.getElementById(`count-${courseId}`);
+                if (cell) {
+                    cell.innerHTML = `${data.enrolled} / ${data.waiting}`;
+                }
+            });
+
+            // 將沒有抓到資料的欄位恢復預設
+            document.querySelectorAll('.live-count-cell').forEach(cell => {
+                if (cell.innerHTML.includes('spinner')) {
+                    cell.innerHTML = 'N/A';
+                }
+            });
+
+            refreshBtn.textContent = '更新即時人數';
+            refreshBtn.disabled = false;
+        });
+    }
     // 統一的篩選觸發函數
     const runFilter = () => {
         const mainFrame = window.parent.frames['mainFrame'];

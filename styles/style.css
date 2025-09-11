@@ -22,11 +22,13 @@
 }
 
 #nthu-helper-toggle-btn {
-    padding: 5px 10px;
+    padding: 3px 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     background-color: #f0f0f0;
     cursor: pointer;
+    margin-left: 10px;
+    margin-bottom: 5px;
 }
 
 .nthu-helper-content {
@@ -456,4 +458,120 @@ td:hover .nthu-helper-search-btn {
 #nthu-helper-back-to-top:hover {
   opacity: 1;
 }
+.live-count-header {
+    background-color: #5a7a99; /* 稍微不同的顏色以示區別 */
+}
 
+.live-count-cell {
+    font-weight: bold;
+    color: #0056b3;
+    position: relative; /* 為了定位 spinner */
+    min-height: 20px; /* 避免 spinner 跑版 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#nthu-helper-refresh-counts-btn {
+    padding: 5px 10px;
+    border: 1px solid #658487;
+    border-radius: 4px;
+    background-color: #e8f0fe;
+    color: #3d32a0;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: auto;
+    margin-right: 10px;
+}
+
+#nthu-helper-refresh-counts-btn:disabled {
+    cursor: not-allowed;
+    background-color: #e9ecef;
+    color: #6c757d;
+}
+
+/* --- Loading Spinner 動畫 --- */
+.spinner {
+  position: absolute;
+  width: 6px;
+  height: 7px;
+}
+
+.spinner div {
+  position: absolute;
+  width: 50%;
+  height: 150%;
+  background: #515151;
+  transform: rotate(calc(var(--rotation) * 1deg)) translate(0, calc(var(--translation) * 1%));
+  animation: spinner-fzua35 1s calc(var(--delay) * 1s) infinite ease;
+}
+
+.spinner div:nth-child(1) {
+  --delay: 0.1;
+  --rotation: 36;
+  --translation: 150;
+}
+
+.spinner div:nth-child(2) {
+  --delay: 0.2;
+  --rotation: 72;
+  --translation: 150;
+}
+
+.spinner div:nth-child(3) {
+  --delay: 0.3;
+  --rotation: 108;
+  --translation: 150;
+}
+
+.spinner div:nth-child(4) {
+  --delay: 0.4;
+  --rotation: 144;
+  --translation: 150;
+}
+
+.spinner div:nth-child(5) {
+  --delay: 0.5;
+  --rotation: 180;
+  --translation: 150;
+}
+
+.spinner div:nth-child(6) {
+  --delay: 0.6;
+  --rotation: 216;
+  --translation: 150;
+}
+
+.spinner div:nth-child(7) {
+  --delay: 0.7;
+  --rotation: 252;
+  --translation: 150;
+}
+
+.spinner div:nth-child(8) {
+  --delay: 0.8;
+  --rotation: 288;
+  --translation: 150;
+}
+
+.spinner div:nth-child(9) {
+  --delay: 0.9;
+  --rotation: 324;
+  --translation: 150;
+}
+
+.spinner div:nth-child(10) {
+  --delay: 1;
+  --rotation: 360;
+  --translation: 150;
+}
+
+@keyframes spinner-fzua35 {
+  0%, 10%, 20%, 30%, 50%, 60%, 70%, 80%, 90%, 100% {
+    transform: rotate(calc(var(--rotation) * 1deg)) translate(0, calc(var(--translation) * 1%));
+  }
+
+  50% {
+    transform: rotate(calc(var(--rotation) * 1deg)) translate(0, calc(var(--translation) * 1.5%));
+  }
+}

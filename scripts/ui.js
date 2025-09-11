@@ -7,6 +7,7 @@ const NthuCourseHelperUI = {
         
         const container = document.createElement('div');
         // 預設為收合狀態
+        container.style = 'margin-top: 10px;';
         container.className = 'nthu-helper-container collapsed';
 
         const geClashCheckbox = isGePage 
@@ -17,6 +18,8 @@ const NthuCourseHelperUI = {
             <div class="nthu-helper-header">
                 <h2>NTHU COURSE ASSISTANT</h2>
                 <button id="nthu-helper-toggle-btn" type="button">展開</button>
+                <button id="nthu-helper-refresh-counts-btn" type="button" class="btn">更新即時人數</button>
+                
             </div>
             <div class="nthu-helper-content">
                 <div class="filters">
@@ -32,7 +35,7 @@ const NthuCourseHelperUI = {
                 </div>
                 <div class="time-grid-container collapsed">
                     <div class="time-grid-header">
-                        <h3>自訂時間篩選 <button id="nthu-helper-toggle-time-grid-btn" type="button">展開</button></h3>
+                        <h3>自訂時間篩選 <button id="nthu-helper-toggle-time-grid-btn" type="button" style="margin-bottom: 5px;">展開</button></h3>
                     </div>
                     <div class="strict-filter-container">
                           <label for="nthu-helper-strict-filter" class="switch-label">嚴格時間篩選</label>
@@ -54,6 +57,33 @@ const NthuCourseHelperUI = {
             </div>
         `;
         return container;
+    },
+    injectLiveCountColumn(table) {
+        // 插入表頭
+        const headerRow = table.querySelector('thead tr')
+        if (headerRow) {
+            const newHeaderCell = document.createElement('td');
+            newHeaderCell.width = "8%";
+            newHeaderCell.style = "text-decoration:none";
+            newHeaderCell.innerHTML = '<div align="center" >即時人數<br>（已選上/待亂數）<br>Live Count<br>(Enrolled/Wait for random)</div>';
+            newHeaderCell.classList.add('live-count-header'); // 方便添加樣式
+            // 插入在「大綱」欄位之前
+            headerRow.insertBefore(newHeaderCell, headerRow.cells[headerRow.cells.length - 1]);
+        }
+        
+        // 在每一行課程插入對應的儲存格
+        const courseRows = table.querySelectorAll('tbody tr');
+        courseRows.forEach(row => {
+            if (row.cells.length > 1) { // 確保是課程行
+                const courseIdCell = row.cells[1];
+                if (courseIdCell) {
+                    const courseId = courseIdCell.innerText.trim().replace(/\s+/g, '');
+                    const newCell = row.insertCell(row.cells.length - 1); // 插入到倒數第二個位置
+                    newCell.align = 'center';
+                    newCell.innerHTML = `<div class="live-count-cell" id="count-${courseId}">---</div>`;
+                }
+            }
+        });
     },
 
     // 建立 7x14 的時間選擇格子
@@ -236,7 +266,7 @@ const NthuCourseHelperUI = {
 
         // 遍歷已選課程並標記
         enrolledCourses.forEach(course => {
-            const isGeCourse = course.id.includes('GE');
+            const isGeCourse = course.id.includes('GE') || course.isGe;
             course.time.forEach(timeSlot => {
                 const slotElement = document.querySelector(`.time-slot[data-day="${timeSlot.day}"][data-slot="${timeSlot.slot}"]`);
                 if (slotElement) {
