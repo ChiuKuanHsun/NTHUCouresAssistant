@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// 【輔助函數】將選課系統的節次代碼轉換為 CSS Grid 的行號 (維持不變)
+// 【輔助函數】將選課系統的節次代碼轉換為 CSS Grid 的行號
 function timeSlotToGridRow(slotCode) {
     const slotMap = {
         '1': 1, '2': 2, '3': 3, '4': 4, 'n': 5,
@@ -99,7 +99,7 @@ function timeSlotToGridRow(slotCode) {
     return slotMap[slotCode] || 0;
 }
 
-// 【渲染課表函數】(維持不變)
+// 【渲染課表函數】
 function renderSchedule(courses, container) {
     container.innerHTML = '';
     const scheduleWrapper = document.createElement('div');

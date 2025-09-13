@@ -17,9 +17,11 @@ const NthuCourseHelperUI = {
         container.innerHTML = `
             <div class="nthu-helper-header">
                 <h2>NTHU COURSE ASSISTANT</h2>
-                <button id="nthu-helper-toggle-btn" type="button">展開</button>
-                <button id="nthu-helper-refresh-counts-btn" type="button" class="btn">更新即時人數</button>
-                
+                <button id="nthu-helper-toggle-btn" type="button" style="margin-right: auto;">展開</button>
+                <div>
+                    <button id="nthu-helper-save-schedule-btn" type="button" class="btn">儲存課表至擴充功能</button>
+                    <button id="nthu-helper-refresh-counts-btn" type="button" class="btn">更新即時人數</button>
+                </div>
             </div>
             <div class="nthu-helper-content">
                 <div class="filters">
@@ -64,8 +66,8 @@ const NthuCourseHelperUI = {
         if (headerRow) {
             const newHeaderCell = document.createElement('td');
             newHeaderCell.width = "8%";
-            newHeaderCell.style = "text-decoration:none";
-            newHeaderCell.innerHTML = '<div align="center" >即時人數<br>（已選上/待亂數）<br>Live Count<br>(Enrolled/Wait for random)</div>';
+            newHeaderCell.style = "text-decoration:none;  cursor: default;";
+            newHeaderCell.innerHTML = '<div align="center" onmouseover="return overlib(\'此欄位查詢系統中的最新選課情況<br>This column queries the latest course selection status in the system<br>\',WIDTH,225,TEXTSIZE,2);" onmouseout="nd();">即時人數<br>（已選上/待亂數）<br>Live Count<br>(Enrolled/Wait for random)</div>';
             newHeaderCell.classList.add('live-count-header'); // 方便添加樣式
             // 插入在「大綱」欄位之前
             headerRow.insertBefore(newHeaderCell, headerRow.cells[headerRow.cells.length - 1]);
@@ -159,8 +161,8 @@ const NthuCourseHelperUI = {
             <div class="menu-title">選擇查詢平台</div>
             <ul class="primary-menu">
                 <li data-platform="dcard">Dcard</li>
-                <li data-platform="opass">歐趴糖 (Opass)</li>
                 <li data-platform="nthumods">NTHU MODS</li>
+                <li data-platform="opass">歐趴糖 (Opass)</li>
             </ul>
             <ul class="secondary-menu" style="display: none;"></ul>
         `;
@@ -274,5 +276,5 @@ const NthuCourseHelperUI = {
                 }
             });
         });
-    }
+    },
 };

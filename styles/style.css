@@ -434,7 +434,7 @@ td:hover .nthu-helper-search-btn {
 /* --- 回到最上方按鈕 --- */
 #nthu-helper-back-to-top {
   position: fixed;
-  bottom: 20px;
+  bottom: 10px;
   right: 30px;
   z-index: 99;
   border: none;
@@ -490,6 +490,22 @@ td:hover .nthu-helper-search-btn {
     color: #6c757d;
 }
 
+#nthu-helper-save-schedule-btn {
+    padding: 5px 10px;
+    border: 1px solid #658487;
+    border-radius: 4px;
+    background-color: #e8f0fe;
+    color: #3d32a0;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: auto;
+    margin-right: 10px;
+}
+#nthu-helper-save-schedule-btn:disabled {
+    cursor: not-allowed;
+    background-color: #e9ecef;
+    color: #6c757d;
+}
 /* --- Loading Spinner 動畫 --- */
 .spinner {
   position: absolute;

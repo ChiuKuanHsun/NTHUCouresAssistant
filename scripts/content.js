@@ -59,6 +59,7 @@ function main() {
     setupEventListeners(courses, courseTable, backToTopButton);
 
     
+    /*
     const form = document.querySelector('form[name="form1"]');
     if (!form) return;
     const mainFrame = window.parent.frames['mainFrame'];
@@ -74,7 +75,7 @@ function main() {
             saveButton.disabled = true;
         });
     });
-    
+    */
     
 }
 
@@ -92,6 +93,7 @@ function setupEventListeners(courses, table, backToTopButton) {
     const strictFilterCheckbox = document.getElementById('nthu-helper-strict-filter');
     const allowXClassClashCheckbox = document.getElementById('nthu-helper-allow-xclass-clash');
     const refreshBtn = document.getElementById('nthu-helper-refresh-counts-btn');
+    const saveBtn = document.getElementById('nthu-helper-save-schedule-btn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', async () => {
             refreshBtn.textContent = '更新中...';
@@ -140,6 +142,15 @@ function setupEventListeners(courses, table, backToTopButton) {
     };
 
     // --- 主要篩選器的事件 --- 
+    saveBtn.addEventListener('click', () => {
+        const mainFrame = window.parent.frames['mainFrame'];
+        const enrolledCourses = NthuCourseParser.parseEnrolledCourses(mainFrame.document);
+        chrome.storage.sync.set({ 'savedSchedule': enrolledCourses }, () => {
+            alert('課表已成功儲存！');
+            saveBtn.textContent = '課表已儲存';
+            saveBtn.disabled = true;
+        });
+    });
     toggleBtn.addEventListener('click', (event) => {
         event.preventDefault();
         container.classList.toggle('collapsed');

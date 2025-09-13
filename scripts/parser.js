@@ -32,8 +32,7 @@ const NthuCourseParser = {
         const restrictionsText = row.cells[columnIndexes.restrictions].innerText;
 
         const isGeCourse = courseTitleCellText.includes('通識') || 
-                             courseTitleCellText.includes('Core GE') || 
-                             courseTitleCellText.includes('Elective GE');
+                            courseTitleCellText.includes('GE course');
                              
         const isXClass = restrictionsText.toUpperCase().includes('X-CLASS');
 
@@ -110,7 +109,8 @@ const NthuCourseParser = {
                 const courseId = row.cells[1].innerText.trim();
                 const timeString = row.cells[4].innerText.trim();
                 const courseTitleCellText = row.cells[2].innerText.trim();
-                const isGeCourse = courseTitleCellText.includes('GE course');
+                const isGeCourse = courseTitleCellText.includes('GE course') || 
+                                   courseTitleCellText.includes('通識');
                 //const noteText = row.cells[10] ? row.cells[10].innerText.trim() : '';
                 //const isXClass = noteText.includes('X-Class');
                 let isXClass = false;
@@ -123,6 +123,7 @@ const NthuCourseParser = {
                 enrolledCourses.push({
                     id: courseId,
                     name: courseTitleCellText.split('\n')[0].trim(),
+                    nameEn: courseTitleCellText.split('\n')[1]?.trim() || '',
                     time: this.parseTimeCode(timeString),
                     isGe: isGeCourse,
                     isXClass: isXClass

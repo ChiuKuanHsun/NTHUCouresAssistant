@@ -115,7 +115,7 @@ const NthuCourseFilter = {
             const row = rows[index];
             if (!row || !course) return;
 
-            const nameMatch = !nameQuery || course.name.toLowerCase().includes(nameQuery);
+            const nameMatch = !nameQuery || course.name.toLowerCase().includes(nameQuery) || course.nameEn.toLowerCase().includes(nameQuery);
             const teacherMatch = !teacherQuery || course.teacher.toLowerCase().includes(teacherQuery);
             
 
