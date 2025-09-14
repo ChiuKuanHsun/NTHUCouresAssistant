@@ -4,7 +4,8 @@
   "version": "1.0",
   "description": "改善清華大學網路選課系統的體驗，提供進階篩選與評價查詢功能。",
   "permissions": [
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "https://www.ccxp.nthu.edu.tw/ccxp/*"
@@ -38,6 +39,12 @@
         "styles/style.css"
       ],
       "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["scripts/execute.js"],
+      "matches": ["https://www.ccxp.nthu.edu.tw/*"]
     }
   ]
 }

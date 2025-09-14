@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. 載入儲存的設定
     chrome.storage.sync.get(['allowGeClash'], (result) => {
-        allowGeClashCheckbox.checked = result.allowGeClash;
+        allowGeClashCheckbox.checked = result.allowGeClash || false;
     });
 
     // 3. 監聽設定變更並儲存

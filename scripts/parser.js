@@ -36,6 +36,44 @@ const NthuCourseParser = {
                              
         const isXClass = restrictionsText.toUpperCase().includes('X-CLASS');
 
+
+        let addActionArgs = null;
+        let syllabusActionArgs = null;
+
+        const addButton = row.cells[0].querySelector('input[type="button"][value*="ADD"], input[type="button"][value*="Add"]');
+        const syllabusButton = row.cells[row.cells.length - 1].querySelector('input[type="button"][value*="Syllabus"]');
+        const geInput = row.cells[0].querySelector('input[type="text"]');
+
+
+        if (addButton) {
+            const onclickAttr = addButton.getAttribute('onclick');
+            // 使用正則表達式提取 checks() 函數中的所有參數
+            const matches = onclickAttr.match(/checks\((.*?)\)/);
+            if (matches && matches[1]) {
+                // 將參數字串 'this.form, 'arg1', 'arg2', ...' 轉換為陣列 ['arg1', 'arg2', ...]
+                addActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^'|'$/g, ''));
+            }
+        } else if (geInput) {
+             // 處理通識課的志願序輸入框
+             const geButton = row.cells[0].querySelector('input[type="button"][value*="Add"]');
+             if(geButton){
+                const onclickAttr = geButton.getAttribute('onclick');
+                const matches = onclickAttr.match(/checks\((.*?)\)/);
+                 if (matches && matches[1]) {
+                    addActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^'|'$/g, ''));
+                }
+             }
+        }
+
+
+        if (syllabusButton) {
+            const onclickAttr = syllabusButton.getAttribute('onclick');
+            const matches = onclickAttr.match(/syllabus\((.*?)\)/);
+            if (matches && matches[1]) {
+                syllabusActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^'|'$/g, ''));
+            }
+        }
+
         return {
             id: row.cells[columnIndexes.id].innerText.trim(),
             name: courseTitleCellText.split('\n')[0].trim(),
@@ -45,7 +83,10 @@ const NthuCourseParser = {
             room: row.cells[columnIndexes.room].innerText.trim(),
             teacher: row.cells[columnIndexes.teacher].innerText.trim(),
             isGe: isGeCourse,
-            isXClass: isXClass
+            isXClass: isXClass,
+            addActionArgs: addActionArgs,
+            syllabusActionArgs: syllabusActionArgs,
+            isGeInput: !!geInput // 標記這是否為一個需要填志願序的通識課
         };
     },
 

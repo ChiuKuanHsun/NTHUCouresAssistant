@@ -109,7 +109,8 @@
 .strict-filter-container {
     display: flex;
     align-items: center;
-    gap: 8px;transition: all 0.5s ease-in-out;
+    gap: 8px;
+    transition: all 0.3s ease-in-out;
 }
 
 .switch-label {
@@ -506,6 +507,17 @@ td:hover .nthu-helper-search-btn {
     background-color: #e9ecef;
     color: #6c757d;
 }
+#nthu-helper-open-temp-list-btn {
+    padding: 5px 10px;
+    border: 1px solid #658487;
+    border-radius: 4px;
+    background-color: #e8f0fe;
+    color: #3d32a0;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: auto;
+    margin-right: 10px;
+}
 /* --- Loading Spinner 動畫 --- */
 .spinner {
   position: absolute;
@@ -590,4 +602,258 @@ td:hover .nthu-helper-search-btn {
   50% {
     transform: rotate(calc(var(--rotation) * 1deg)) translate(0, calc(var(--translation) * 1.5%));
   }
+}
+.bookmark {
+  cursor: pointer;
+  width: 28px;  /* 調整大小以適應表格 */
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: -1px;
+  right: -5px;
+}
+
+.bookmark input[type="checkbox"] {
+  display: none;
+}
+
+.bookmark .svgIcon path {
+  stroke-dasharray: 200 0;
+  stroke-dashoffset: 0;
+  stroke: #6c757d; /* 預設灰色 */
+  fill: rgba(0,0,0,0);
+  transition: fill 0.4s ease-in-out;
+}
+
+.bookmark input[type="checkbox"]:checked ~ .svgIcon path {
+  fill: #ffc107; /* 儲存後變為黃色 */
+  stroke: #e6a32e;
+  animation: bookmark-animation 0.5s linear;
+}
+
+@keyframes bookmark-animation {
+  0% {
+    stroke-dasharray: 0 200;
+    stroke-dashoffset: 80;
+  }
+  100% {
+    stroke-dasharray: 200 0;
+  }
+}
+
+/* --- 【新增】浮動「查看暫存」按鈕樣式 --- */
+#nthu-helper-saved-list-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 30px; /* 與回到頂部按鈕相對 */
+  z-index: 99;
+  border: none;
+  outline: none;
+  background-color: #adb5bd; /* 預設灰色 */
+  color: white;
+  cursor: pointer;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 18px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s ease;
+}
+
+#nthu-helper-saved-list-btn.active {
+  background-color: #ffc107; /* 有項目時變為黃色 */
+}
+
+#nthu-helper-saved-list-btn .saved-icon {
+  stroke: white; /* SVG 線條顏色 */
+  fill: none;
+}
+
+/* 數字角標 */
+.count-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #dc3545; /* 紅色 */
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+  font-weight: bold;
+  border: 2px solid white;
+  display: none; /* 預設隱藏 */
+}
+
+/* 動畫容器 */
+.spinner-wrapper {
+    position: absolute;
+    top: 0; 
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* 讓動畫不影響點擊 */
+}
+
+/* 這是旋轉的容器，它本身不顯示任何東西 */
+.spinner-wrapper .spinner {
+    width: 100%;
+    height: 100%;
+    position: relative; /* 確保偽元素相對於它定位 */
+    animation: spinner-spin 1.5s linear infinite;
+}
+
+/* 移除舊的 div 基礎的 spinner 樣式 */
+.spinner-wrapper .spinner div {
+    display: none;
+}
+
+/* 關鍵：使用 ::before 偽元素來製作旋轉的弧形 */
+.spinner-wrapper .spinner::before {
+    content: '';
+    display: block;
+    /* 尺寸與父容器 (按鈕) 完全相同 */
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box; /* 確保 border 不會讓尺寸變大 */
+    
+    /* 使用簡單的邊框方法，避免 mask 兼容性問題 */
+    border: 3px solid rgba(255, 255, 255, 0.3); /* 淡色底邊框 */
+    border-top: 3px solid #ffffff; /* 白色頂部邊框 */
+    border-radius: 50%; /* 讓它變成一個圓圈 */
+}
+
+/* 旋轉動畫的 keyframe */
+@keyframes spinner-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* --- 【新增】暫存清單 Modal 內的按鈕樣式 --- */
+.saved-courses-table .action-cell {
+    text-align: left;
+    vertical-align: middle;
+}
+.saved-courses-table .action-cell .btn2 {
+    font-size: 12px;
+    padding: 4px 8px;
+    margin: 0 2px;
+}
+.saved-courses-table .ge-priority-input {
+    width: 50px;
+    padding: 4px;
+    font-size: 12px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+/* 讓 modal 內的按鈕和書籤能正常顯示 */
+.saved-courses-table .action-cell .bookmark {
+    position: static; /* 取消絕對定位 */
+    display: inline-flex;
+}
+.saved-courses-table .action-cell input[type="button"],
+.saved-courses-table .action-cell input[type="text"] {
+    font-size: 12px;
+    padding: 4px 6px;
+}
+.saved-courses-table .action-cell input[type="text"] {
+    width: 80px; /* 限制志願序輸入框寬度 */
+}
+
+/* --- 【新增】暫存清單 Modal 樣式 --- */
+#nthu-helper-modal-content.saved-courses-modal {
+    width: 80%;
+    max-width: 900px; /* 設定最大寬度 */
+    height: auto; /* 高度由內容決定 */
+    max-height: 85vh;
+}
+.modal-header {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+}
+.modal-body {
+    padding: 15px;
+    overflow-y: auto;
+}
+.saved-courses-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.saved-courses-table th, .saved-courses-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+.saved-courses-table th {
+    background-color: #f2f2f2;
+}
+.no-saved-courses {
+    text-align: center;
+    color: #888;
+    padding: 20px !important;
+}
+.saved-courses-table .remove-btn {
+    padding: 4px 8px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.saved-courses-table .remove-btn:hover {
+    background-color: #c82333;
+}
+#T1 {
+  margin-bottom: 85px;
+}
+
+/* --- 【新增】Beta 標籤樣式 --- */
+.betage-label {
+    background-color: #ffc107; /* 黃色背景 */
+    color: #212529; /* 深色文字 */
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: auto;
+    margin-top: 3px;
+    user-select: none; /* 防止文字被選取 */
+    margin-left: 5px;
+}
+/* --- 【新增】清空全部按鈕樣式 --- */
+.delete-all-btn {
+    padding: 4px 8px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: auto;
+    margin-top: 2px;
+    margin-right: 10px;
+}
+.delete-all-btn:hover {
+    background-color: #c82333;
 }

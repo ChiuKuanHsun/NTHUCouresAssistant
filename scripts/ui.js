@@ -13,12 +13,23 @@ const NthuCourseHelperUI = {
         const geClashCheckbox = isGePage 
             ? `<label><input type="checkbox" id="nthu-helper-allow-ge-clash"> 允許通識衝堂</label>`
             : '';
+        
+        // 等待 DOM 插入後再設定勾選狀態
+        setTimeout(() => {
+            chrome.storage.sync.get(['allowGeClash'], (result) => {
+            const allowGeClashCheckbox = document.getElementById('nthu-helper-allow-ge-clash');
+            if (allowGeClashCheckbox && result.allowGeClash) {
+                allowGeClashCheckbox.checked = true;
+            }
+            });
+        }, 0);
 
         container.innerHTML = `
             <div class="nthu-helper-header">
                 <h2>NTHU COURSE ASSISTANT</h2>
                 <button id="nthu-helper-toggle-btn" type="button" style="margin-right: auto;">展開</button>
                 <div>
+                    <button id="nthu-helper-open-temp-list-btn" type="button" class="btn">開啟暫存課程清單</button>
                     <button id="nthu-helper-save-schedule-btn" type="button" class="btn">儲存課表至擴充功能</button>
                     <button id="nthu-helper-refresh-counts-btn" type="button" class="btn">更新即時人數</button>
                 </div>
@@ -67,7 +78,7 @@ const NthuCourseHelperUI = {
             const newHeaderCell = document.createElement('td');
             newHeaderCell.width = "8%";
             newHeaderCell.style = "text-decoration:none;  cursor: default;";
-            newHeaderCell.innerHTML = '<div align="center" onmouseover="return overlib(\'此欄位查詢系統中的最新選課情況<br>This column queries the latest course selection status in the system<br>\',WIDTH,225,TEXTSIZE,2);" onmouseout="nd();">即時人數<br>（已選上/待亂數）<br>Live Count<br>(Enrolled/Wait for random)</div>';
+            newHeaderCell.innerHTML = '<div align="center" onmouseover="return overlib(\'此欄位查詢系統中的最新選課情況<br>This column queries the latest course selection status in the system<br>\',WIDTH,225,TEXTSIZE,2);" onmouseout="nd();">即時人數<br>（已選上 / 待亂數）<br>Live Count<br>(Enrolled / To be randomed)</div>';
             newHeaderCell.classList.add('live-count-header'); // 方便添加樣式
             // 插入在「大綱」欄位之前
             headerRow.insertBefore(newHeaderCell, headerRow.cells[headerRow.cells.length - 1]);
@@ -276,5 +287,79 @@ const NthuCourseHelperUI = {
                 }
             });
         });
+    },
+    /**
+     * 【新增】建立單一課程的「暫存」書籤按鈕
+     * @param {number} index - 課程在 `courses` 陣列中的索引
+     * @param {boolean} isSaved - 該課程是否已被儲存
+     * @returns {HTMLLabelElement} - 完整的 <label> 元素
+     */
+    createBookmarkButton(index, isSaved) {
+        const uniqueId = `nthu-helper-bookmark-${index}`;
+        const label = document.createElement('label');
+        label.className = 'bookmark';
+        label.htmlFor = uniqueId;
+        label.dataset.index = index;
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.id = uniqueId;
+        input.checked = isSaved;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '15');
+        svg.setAttribute('viewBox', '0 0 50 70');
+        svg.setAttribute('fill', 'none');
+        svg.classList.add('svgIcon');
+        svg.innerHTML = `<path d="M46 62.0085L46 3.88139L3.99609 3.88139L3.99609 62.0085L24.5 45.5L46 62.0085Z" stroke="black" stroke-width="7"></path>`;
+
+        label.appendChild(input);
+        label.appendChild(svg);
+        return label;
+    },
+
+    /**
+     * 【新增】在所有課程行注入「暫存」書籤按鈕
+     * @param {HTMLTableElement} table - 課程表格
+     * @param {Array<Object>} savedCourses - 已儲存的課程陣列
+     */
+    injectBookmarkButtons(table, savedCourses) {
+        const savedCourseIds = new Set(savedCourses.map(c => c.id));
+        const rows = table.querySelectorAll('tbody tr');
+        
+        rows.forEach((row, index) => {
+            const courseIdCell = row.cells[1];
+            if (!courseIdCell) return;
+            const courseId = courseIdCell.innerText.trim();
+
+            if (row.cells.length > 1 && (row.querySelector('input[type="button"]') || row.querySelector('input[type="text"]'))) {
+                const firstCell = row.cells[0];
+                firstCell.style.position = 'relative'; // 為了定位
+                
+                const isSaved = savedCourseIds.has(courseId);
+                const bookmarkBtn = this.createBookmarkButton(index, isSaved);
+                
+                firstCell.appendChild(bookmarkBtn);
+            }
+        });
+    },
+
+    /**
+     * 【新增】建立浮動的「查看暫存清單」按鈕
+     * @returns {HTMLButtonElement} - 浮動按鈕元素
+     */
+    createSavedListButton() {
+        const button = document.createElement('button');
+        button.id = 'nthu-helper-saved-list-btn';
+        button.type = 'button';
+        button.title = '查看暫存清單';
+        button.innerHTML = `
+            <div class="spinner-wrapper"></div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="saved-icon">
+                <path d="M17.5 2.5H6.5C5.39543 2.5 4.5 3.39543 4.5 4.5V21.5L12 16.5L19.5 21.5V4.5C19.5 3.39543 18.6046 2.5 17.5 2.5Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="count-badge">0</span>
+        `;
+        return button;
     },
 };
