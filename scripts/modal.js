@@ -2,36 +2,48 @@
 // 負責建立與管理互動視窗
 
 const NthuCourseModal = {
-    show(url) {
-        // 移除舊的 modal
-        this.close();
+    show(url, originRect) {
+        this.close(true); // 立即關閉任何已存在的 modal
 
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'nthu-helper-modal-overlay';
-
         const modalContent = document.createElement('div');
         modalContent.id = 'nthu-helper-modal-content';
-        modalContent.innerHTML = `
-            <button id="nthu-helper-modal-close">&times;</button>
-            <iframe src="${url}"></iframe>
-        `;
+        modalContent.innerHTML = `<button id="nthu-helper-modal-close">&times;</button><iframe src="${url}"></iframe>`;
+        
+        // --- 動畫核心邏輯 ---
+        if (originRect) {
+            const originX = originRect.left + originRect.width / 2;
+            const originY = originRect.top + originRect.height / 2;
+            // 設定動畫的原點為按鈕中心
+            modalContent.style.transformOrigin = `${originX}px ${originY}px`;
+        }
+        modalOverlay.classList.add('opening'); // 觸發開啟動畫
+        // --- 結束 ---
 
         modalOverlay.appendChild(modalContent);
         document.body.appendChild(modalOverlay);
 
-        // 綁定關閉事件
-        document.getElementById('nthu-helper-modal-close').addEventListener('click', this.close);
+        document.getElementById('nthu-helper-modal-close').addEventListener('click', () => this.close());
         modalOverlay.addEventListener('click', (event) => {
-            if (event.target === modalOverlay) {
-                this.close();
-            }
+            if (event.target === modalOverlay) this.close();
         });
     },
 
-    close() {
+    close(immediately = false) {
         const modalOverlay = document.getElementById('nthu-helper-modal-overlay');
         if (modalOverlay) {
-            modalOverlay.remove();
+            if (immediately) {
+                modalOverlay.remove();
+                return;
+            }
+            modalOverlay.classList.remove('opening');
+            modalOverlay.classList.add('closing');
+            
+            // 動畫結束後移除元素
+            modalOverlay.addEventListener('animationend', () => {
+                modalOverlay.remove();
+            }, { once: true });
         }
     },
     /**
@@ -39,18 +51,25 @@ const NthuCourseModal = {
      * @param {Array<Object>} savedCourses - 已儲存的課程物件陣列
      * @param {Function} onRemoveCallback - 當課程被移除時要執行的回呼函數
      */
-    showSavedCoursesModal(savedCourses, onRemoveCallback) {
-        this.close();
+    showSavedCoursesModal(savedCourses, onRemoveCallback, originRect) {
+        this.close(true);
 
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'nthu-helper-modal-overlay';
         const modalContent = document.createElement('div');
         modalContent.id = 'nthu-helper-modal-content';
         modalContent.classList.add('saved-courses-modal');
+        if (originRect) {
+            const originX = originRect.left + originRect.width / 2;
+            const originY = originRect.top + originRect.height / 2;
+            modalContent.style.transformOrigin = `${originX}px ${originY}px`;
+        }
+        modalOverlay.classList.add('opening');
+        
         const dayMap = { 1: 'M', 2: 'T', 3: 'W', 4: 'R', 5: 'F', 6: 'S', 7: 'U' };
 
         const tableRows = savedCourses.length === 0 
-            ? '<tr><td colspan="7" class="no-saved-courses">尚未暫存任何課程</td></tr>'
+            ? '<tr><td colspan="8" class="no-saved-courses">尚未暫存任何課程</td></tr>'
             : savedCourses.map((course, index) => {
                 const formattedTime = course.time.map(t => `${dayMap[t.day] || '?'}${t.slot}`).join(' ');
                 let addActionCellHTML = '';
@@ -108,7 +127,10 @@ const NthuCourseModal = {
         });
         
         // 綁定關閉事件
-        document.getElementById('nthu-helper-modal-close').addEventListener('click', this.close);
-        modalOverlay.addEventListener('click', (event) => { if (event.target === modalOverlay) this.close(); });
+        document.getElementById('nthu-helper-modal-close').addEventListener('click', () => this.close());
+        modalOverlay.addEventListener('click', (event) => {
+            if (event.target === modalOverlay) this.close();
+        });
+        
     }
 };

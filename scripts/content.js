@@ -37,15 +37,14 @@ function updateSavedListButton() {
     }
 }
 
-function openSavedCoursesModal() {
-    NthuCourseModal.showSavedCoursesModal(savedCourses, (indexToRemove) => {
+function openSavedCoursesModal(buttonRect) {
+   const handleRemoveCourse = (indexToRemove) => {
+        // 移除所有課程
         if (indexToRemove === -1) {
-            // 清空全部課程
             savedCourses = [];
             chrome.storage.sync.set({ 'savedCourses': [] }, () => {
-                console.log('所有暫存課程已清空');
+                console.log('所有課程已從暫存移除');
                 updateSavedListButton();
-                // 將所有書籤取消勾選
                 const courseTable = document.getElementById('T1');
                 if (courseTable) {
                     const rows = courseTable.querySelectorAll('tbody tr');
@@ -56,40 +55,55 @@ function openSavedCoursesModal() {
                         }
                     });
                 }
-                openSavedCoursesModal(); // 重新渲染 modal 內容
+                // 直接關閉 modal
+                NthuCourseModal.close();
             });
             return;
         }
         const courseToRemove = savedCourses[indexToRemove];
         if (!courseToRemove) return;
 
+        // 從 JS 陣列中移除
         savedCourses.splice(indexToRemove, 1);
         
+        // 更新 storage
         chrome.storage.sync.set({ 'savedCourses': savedCourses }, () => {
             console.log('課程已從暫存移除');
             
+            // 更新浮動按鈕
             updateSavedListButton();
             
-            // --- 【核心 Bug 修正】 ---
-            // 直接在主頁面上找到對應的書籤並手動取消勾選，不再重新注入所有按鈕
+            // --- 【核心 Bug 修正】---
+            // 在主頁面上找到對應的書籤並手動取消勾選
             const courseTable = document.getElementById('T1');
             if (courseTable) {
                  const rows = courseTable.querySelectorAll('tbody tr');
-                 rows.forEach((row, index) => {
+                 rows.forEach((row, rowIndex) => {
                     const idCell = row.cells[1];
                     if (idCell && idCell.innerText.trim() === courseToRemove.id) {
-                        const bookmarkCheckbox = row.querySelector(`#nthu-helper-bookmark-${index}`);
-                        if (bookmarkCheckbox) {
-                            bookmarkCheckbox.checked = false;
-                        }
+                        const bookmarkCheckbox = row.querySelector(`#nthu-helper-bookmark-${rowIndex}`);
+                        if (bookmarkCheckbox) bookmarkCheckbox.checked = false;
                     }
                  });
             }
-            
-            openSavedCoursesModal(); // 重新渲染 modal 內容
+
+            // --- 【新增】直接操作 DOM 移除 modal 中的對應行，而不是重新打開 ---
+            const modalBody = document.querySelector('.saved-courses-modal .modal-body tbody');
+            if (modalBody) {
+                const rowToRemove = modalBody.querySelector(`tr[data-course-id="${courseToRemove.id}"]`);
+                if (rowToRemove) {
+                    rowToRemove.remove(); // 直接移除該行
+                }
+                // 如果移除後清單為空，顯示提示訊息
+                if (savedCourses.length === 0) {
+                    modalBody.innerHTML = '<tr><td colspan="8" class="no-saved-courses">尚未暫存任何課程</td></tr>';
+                }
+            }
         });
-        
-    });
+    };
+
+    // 呼叫 modal.js 的函數來顯示視窗
+    NthuCourseModal.showSavedCoursesModal(savedCourses, handleRemoveCourse, buttonRect);
     const modalContent = document.getElementById('nthu-helper-modal-content');
     if (modalContent) {
         modalContent.addEventListener('click', (event) => {
@@ -201,6 +215,7 @@ async function main() {
 function setupEventListeners(courses, table, backToTopButton) {
     const nameFilter = document.getElementById('nthu-helper-filter-name');
     const teacherFilter = document.getElementById('nthu-helper-filter-teacher');
+    const courseNoFilter = document.getElementById('nthu-helper-filter-courseNo');
     const timeGrid = document.querySelector('.nthu-helper-time-grid');
     const hideClashCheckbox = document.getElementById('nthu-helper-hide-clash');
     const toggleBtn = document.getElementById('nthu-helper-toggle-btn');
@@ -280,6 +295,7 @@ function setupEventListeners(courses, table, backToTopButton) {
     });
     nameFilter.addEventListener('input', runFilter);
     teacherFilter.addEventListener('input', runFilter);
+    courseNoFilter.addEventListener('input', runFilter);
     hideClashCheckbox.addEventListener('change', runFilter);
     if (allowGeClashCheckbox) {
         allowGeClashCheckbox.addEventListener('change', runFilter);
@@ -360,7 +376,7 @@ function setupEventListeners(courses, table, backToTopButton) {
         
         // 將更新後的列表存回 storage
         chrome.storage.sync.set({ 'savedCourses': savedCourses }, () => {
-            console.log('暫存清單已更新', savedCourses);
+            //console.log('暫存清單已更新', savedCourses);
             updateSavedListButton(); // 更新浮動按鈕狀態
         });
     });

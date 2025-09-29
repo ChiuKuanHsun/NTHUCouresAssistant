@@ -99,6 +99,7 @@ const NthuCourseFilter = {
     filterAll(table, courses, enrolledCourses) {
         const nameQuery = document.getElementById('nthu-helper-filter-name').value.toLowerCase();
         const teacherQuery = document.getElementById('nthu-helper-filter-teacher').value.toLowerCase();
+        const courseNoQuery = document.getElementById('nthu-helper-filter-courseNo').value.toLowerCase();
         const hideClash = document.getElementById('nthu-helper-hide-clash').checked;
         const strictFilter = document.getElementById('nthu-helper-strict-filter').checked;
         const selectedTimes = this.getSelectedTimeSlots();
@@ -117,6 +118,7 @@ const NthuCourseFilter = {
 
             const nameMatch = !nameQuery || course.name.toLowerCase().includes(nameQuery) || course.nameEn.toLowerCase().includes(nameQuery);
             const teacherMatch = !teacherQuery || course.teacher.toLowerCase().includes(teacherQuery);
+            const courseNoMatch = !courseNoQuery || course.id.toLowerCase().includes(courseNoQuery);
             
 
             const timeSelectMatch = this.checkTimeMatch(course.time, selectedTimes, strictFilter);
@@ -126,7 +128,7 @@ const NthuCourseFilter = {
             // 衝堂邏輯是「AND」，不能與已選課程衝堂
             const clashMatch = !hideClash || !this.isCourseClashing(course, enrolledCourses, allowGeClash, allowXClassClash);
 
-            if (nameMatch && teacherMatch && timeSelectMatch && clashMatch) {
+            if (nameMatch && teacherMatch && courseNoMatch && timeSelectMatch && clashMatch) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';

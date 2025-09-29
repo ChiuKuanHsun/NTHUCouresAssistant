@@ -857,3 +857,56 @@ td:hover .nthu-helper-search-btn {
 .delete-all-btn:hover {
     background-color: #c82333;
 }
+
+#nthu-helper-modal-content {
+    transform: scale(0); /* 初始大小為0 */
+    opacity: 0;
+}
+
+/* 開啟動畫 */
+#nthu-helper-modal-overlay.opening #nthu-helper-modal-content {
+    animation: modal-zoom-in 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+/* 關閉動畫 */
+#nthu-helper-modal-overlay.closing #nthu-helper-modal-content {
+    animation: modal-zoom-out 0.3s ease-out forwards;
+}
+
+/* 背景的淡入淡出 */
+#nthu-helper-modal-overlay {
+    background: rgba(0, 0, 0, 0); /* 初始透明 */
+    transition: background-color 0.3s ease-in-out;
+}
+#nthu-helper-modal-overlay.opening {
+    background: rgba(0, 0, 0, 0.6);
+}
+#nthu-helper-modal-overlay.closing {
+    background: rgba(0, 0, 0, 0);
+}
+
+
+@keyframes modal-zoom-in {
+    from {
+        /* 從一個極小、幾乎透明的狀態開始 */
+        transform: scale(0.1);
+        opacity: 0;
+    }
+    to {
+        /* 動畫結束時回到正常大小和位置 */
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes modal-zoom-out {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        /* 動畫結束時縮小回幾乎透明的狀態 */
+        transform: scale(0.1);
+        opacity: 0;
+    }
+}

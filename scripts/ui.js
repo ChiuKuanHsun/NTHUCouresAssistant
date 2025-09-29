@@ -36,7 +36,8 @@ const NthuCourseHelperUI = {
             </div>
             <div class="nthu-helper-content">
                 <div class="filters">
-                    <input type="text" id="nthu-helper-filter-name" placeholder="篩選課程名稱...">
+                    <input type="text" id="nthu-helper-filter-courseNo" placeholder="篩選科目代碼...">
+                    <input type="text" id="nthu-helper-filter-name" placeholder="篩選科目名稱...">
                     <input type="text" id="nthu-helper-filter-teacher" placeholder="篩選教師姓名...">
                     <div class="filter-options">
                       <label><input type="checkbox" id="nthu-helper-hide-clash"> 隱藏衝堂課程</label>
