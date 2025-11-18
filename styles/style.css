@@ -746,6 +746,8 @@ td:hover .nthu-helper-search-btn {
 .saved-courses-table .action-cell {
     text-align: left;
     vertical-align: middle;
+    max-width: 150px;
+    text-align: center;
 }
 .saved-courses-table .action-cell .btn2 {
     font-size: 12px;
@@ -771,7 +773,8 @@ td:hover .nthu-helper-search-btn {
     padding: 4px 6px;
 }
 .saved-courses-table .action-cell input[type="text"] {
-    width: 80px; /* 限制志願序輸入框寬度 */
+    width: 100px; /* 限制志願序輸入框寬度 */
+    margin-right: 5px;
 }
 
 /* --- 【新增】暫存清單 Modal 樣式 --- */

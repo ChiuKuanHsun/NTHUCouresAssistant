@@ -8,7 +8,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://www.ccxp.nthu.edu.tw/ccxp/*"
+    "https://www.ccxp.nthu.edu.tw/ccxp/*","https://nthucourseselectiontemplate.pages.dev/*"
   ],
   "icons": {
     "16": "icons/icon16.png",
@@ -25,7 +25,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.ccxp.nthu.edu.tw/ccxp/*"
+        "https://www.ccxp.nthu.edu.tw/ccxp/*",
+        "https://nthucourseselectiontemplate.pages.dev/*"
       ],
       "js": [
         "scripts/modal.js",
@@ -44,7 +45,7 @@
   "web_accessible_resources": [
     {
       "resources": ["scripts/execute.js"],
-      "matches": ["https://www.ccxp.nthu.edu.tw/*"]
+      "matches": ["https://www.ccxp.nthu.edu.tw/*", "https://nthucourseselectiontemplate.pages.dev/*"]
     }
   ]
 }

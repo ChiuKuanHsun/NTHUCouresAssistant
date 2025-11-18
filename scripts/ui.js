@@ -175,6 +175,7 @@ const NthuCourseHelperUI = {
                 <li data-platform="dcard">Dcard</li>
                 <li data-platform="nthumods">NTHU MODS</li>
                 <li data-platform="opass">歐趴糖 (Opass)</li>
+                <li data-platform="Google">Google</li>
             </ul>
             <ul class="secondary-menu" style="display: none;"></ul>
         `;
@@ -210,10 +211,33 @@ const NthuCourseHelperUI = {
                         break;
                     case 'opass':
                         menuTitle.textContent = '歐趴糖 搜尋方式';
+                        function encodeFor1111OPT(payload) {
+                            // 1) JSON -> URI 編碼
+                            const uriEncoded = encodeURIComponent(JSON.stringify(payload));
+
+                            // 2) URI 編碼字串 -> bytes，再做 base64
+                            const bytes = new TextEncoder().encode(uriEncoded);
+                            let binary = "";
+                            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+                            let b64 = btoa(binary);
+
+                            // 3) 轉成 Base64-URL，並去掉 padding
+                            return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+                        }
+                        const createOpassUrl = (keyword) => {
+                            // 建立符合網站 API 的物件
+                            const searchParams = { "keyword": keyword, "college_id": 10935223, "type": 0, "order": "-modify_time" };
+                            
+                            
+                            // 【關鍵修正】對整個 JSON 字串進行 URL 編碼
+                            const encodedString = encodeFor1111OPT(searchParams);
+
+                            return `https://www.1111opt.com.tw/search-result/${encodedString}`;
+                        };
                         secondaryMenuHTML += `
-                            <li data-url="https://www.opass.app/search?q=${encodeURIComponent(course.name)}">查詢：課程名稱</li>
-                            <li data-url="https://www.opass.app/search?q=${encodeURIComponent(teacherName)}">查詢：教師名稱</li>
-                            <li data-url="https://www.opass.app/search?q=${encodeURIComponent(course.name + ' ' + teacherName)}">查詢：課名＋教師</li>
+                            <li data-url="${createOpassUrl(course.name)}">查詢：課程名稱</li>
+                            <li data-url="${createOpassUrl(teacherName)}">查詢：教師名稱</li>
+                            <li data-url="${createOpassUrl(course.name + ' ' + teacherName)}">查詢：課名＋教師</li>
                         `;
                         break;
                     case 'nthumods':
@@ -223,6 +247,16 @@ const NthuCourseHelperUI = {
                             <li data-url="https://nthumods.com/zh/courses?nthu_courses%5Bmenu%5D%5Bsemester%5D=&nthu_courses%5Bquery%5D=${encodeURIComponent(teacherName)}">查詢：教師名稱</li>
                             <li data-url="https://nthumods.com/zh/courses?nthu_courses%5Bmenu%5D%5Bsemester%5D=&nthu_courses%5Bquery%5D=${encodeURIComponent(course.id)}">查詢：科號</li>
                         `;
+                        break;
+                    case 'Google':
+                        menuTitle.textContent = 'Google 搜尋方式';
+                        secondaryMenuHTML += `
+                            <li data-url="https://www.google.com/search?q=${encodeURIComponent(course.name + ' 清大')}">查詢：課程名稱</li>
+                            <li data-url="https://www.google.com/search?q=${encodeURIComponent(teacherName + ' 清大')}">查詢：教師名</li>
+                            <li data-url="https://www.google.com/search?q=${encodeURIComponent(course.name + ' ' + teacherName)}">查詢：課名＋教師</li>
+                        `;
+                        break;
+                    default:
                         break;
                 }
                 
