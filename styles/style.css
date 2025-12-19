@@ -913,3 +913,112 @@ td:hover .nthu-helper-search-btn {
         opacity: 0;
     }
 }
+
+.nthu-helper-custom-select-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 300px; /* 您可以根據需要調整寬度，或設為 100% */
+    vertical-align: middle;
+    margin-right: 5px;
+    font-size: 13px;
+    text-align: left; /* 確保內容靠左 */
+    margin-bottom: 1px;
+}
+
+/* 模擬的按鈕 (觸發器) */
+.nthu-helper-select-trigger {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+    user-select: none;
+}
+
+/* 加上一個小箭頭 */
+.nthu-helper-select-trigger::after {
+    content: '▼';
+    font-size: 10px;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+}
+
+.nthu-helper-select-trigger:hover {
+    border-color: #888;
+}
+
+/* 下拉選單容器 (隱藏狀態) */
+.nthu-helper-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: none; /* 預設隱藏 */
+    margin-top: 2px;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+/* 顯示狀態 */
+.nthu-helper-select-dropdown.show {
+    display: block;
+}
+
+/* 搜尋框 */
+.nthu-helper-select-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px;
+    margin-bottom: 5px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    outline: none;
+}
+
+.nthu-helper-select-search-input:focus {
+    border-color: #6699ff;
+}
+
+/* 選項列表區域 */
+.nthu-helper-select-options {
+    max-height: 250px; /* 限制高度，超過捲動 */
+    overflow-y: auto;
+    border-top: 1px solid #eee;
+}
+
+/* 單個選項 */
+.nthu-helper-custom-option {
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    line-height: 1.4;
+}
+
+.nthu-helper-custom-option:hover,
+.nthu-helper-custom-option.focused { /* 新增這一行 */
+    background-color: #f0f8ff;
+}
+
+.nthu-helper-custom-option.selected {
+    background-color: #e6f0ff;
+    color: #0056b3;
+    font-weight: bold;
+}
+
+.nthu-helper-no-match {
+    padding: 8px;
+    color: #999;
+    text-align: center;
+}

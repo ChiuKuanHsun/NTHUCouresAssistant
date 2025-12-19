@@ -110,10 +110,10 @@ const NthuCourseFilter = {
         const allowXClassClashCheckbox = document.getElementById('nthu-helper-allow-xclass-clash');
         const allowXClassClash = allowXClassClashCheckbox ? allowXClassClashCheckbox.checked : false;
 
-        const rows = table.querySelectorAll('tbody tr');
+        //const rows = table.querySelectorAll('tbody tr');
 
-        courses.forEach((course, index) => {
-            const row = rows[index];
+        courses.forEach((course) => {
+            const row = course.element;
             if (!row || !course) return;
 
             const nameMatch = !nameQuery || course.name.toLowerCase().includes(nameQuery) || course.nameEn.toLowerCase().includes(nameQuery);

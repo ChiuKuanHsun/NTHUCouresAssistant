@@ -164,6 +164,13 @@ async function main() {
         return;
     }
     
+    NthuCourseHelperUI.makeSelectSearchable(deptSelect);
+
+    const classSelect = document.querySelector('select[name="new_class"]');
+    if (classSelect) {
+        NthuCourseHelperUI.makeSelectSearchable(classSelect);
+    }
+    
     
 
     // 1. 注入 UI 介面

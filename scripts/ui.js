@@ -397,4 +397,182 @@ const NthuCourseHelperUI = {
         `;
         return button;
     },
+    /**
+     * 【新增】讓下拉式選單具有搜尋功能
+     * @param {HTMLSelectElement} selectElement - 目標 select 元素
+     */
+    makeSelectSearchable(selectElement) {
+        if (!selectElement || selectElement.dataset.enhanced === "true") return;
+        
+        selectElement.dataset.enhanced = "true";
+        selectElement.style.display = 'none';
+
+        // ... (中間建立 DOM 結構的程式碼保持不變: wrapper, trigger, dropdown, searchInput, optionsList) ...
+        const wrapper = document.createElement('div');
+        wrapper.className = 'nthu-helper-custom-select-wrapper';
+        
+        const trigger = document.createElement('div');
+        trigger.className = 'nthu-helper-select-trigger';
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        trigger.textContent = selectedOption ? selectedOption.text : '請選擇...';
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'nthu-helper-select-dropdown';
+
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'nthu-helper-select-search-input';
+        searchInput.placeholder = '輸入關鍵字搜尋...';
+
+        const optionsList = document.createElement('div');
+        optionsList.className = 'nthu-helper-select-options';
+
+        // 3. 填充選項
+        const generateOptions = (filterText = '') => {
+            optionsList.innerHTML = '';
+            let hasMatch = false; // 用於判斷是否有內容
+
+            Array.from(selectElement.options).forEach((opt, index) => {
+                const text = opt.text;
+                const value = opt.value;
+                
+                if (filterText && !text.toLowerCase().includes(filterText.toLowerCase()) && !value.toLowerCase().includes(filterText.toLowerCase())) {
+                    return;
+                }
+
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'nthu-helper-custom-option';
+                optionDiv.textContent = text;
+                optionDiv.dataset.value = value;
+                optionDiv.dataset.index = index;
+
+                // 標示目前選中的項目 (selected 是指資料庫已選的值)
+                if (index === selectElement.selectedIndex) {
+                    optionDiv.classList.add('selected');
+                }
+
+                // 【新增】如果是搜尋結果的第一項，預設給它 focused (方便直接按 Enter)
+                if (!hasMatch) {
+                    optionDiv.classList.add('focused');
+                }
+                hasMatch = true;
+
+                optionDiv.addEventListener('click', () => {
+                    selectElement.selectedIndex = index;
+                    const event = new Event('change', { bubbles: true });
+                    selectElement.dispatchEvent(event);
+                    trigger.textContent = text;
+                    dropdown.classList.remove('show');
+                });
+
+                optionsList.appendChild(optionDiv);
+            });
+
+            if (optionsList.children.length === 0) {
+                const noMatch = document.createElement('div');
+                noMatch.className = 'nthu-helper-no-match';
+                noMatch.textContent = '無符合項目';
+                optionsList.appendChild(noMatch);
+            }
+        };
+
+        generateOptions();
+
+        // 4. 事件綁定
+
+        // ... (trigger 的 click 事件保持不變) ...
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.nthu-helper-select-dropdown.show').forEach(d => {
+                if (d !== dropdown) d.classList.remove('show');
+            });
+            dropdown.classList.toggle('show');
+            
+            if (dropdown.classList.contains('show')) {
+                searchInput.value = '';
+                generateOptions(''); 
+                setTimeout(() => searchInput.focus(), 50);
+                
+                // 捲動到 selected 項目
+                const selectedEl = optionsList.querySelector('.selected');
+                if (selectedEl) {
+                    // 同步更新 focused 到 selected 項目上
+                    optionsList.querySelectorAll('.focused').forEach(el => el.classList.remove('focused'));
+                    selectedEl.classList.add('focused');
+                    optionsList.scrollTop = selectedEl.offsetTop - optionsList.offsetTop;
+                }
+            }
+        });
+
+        // 搜尋輸入事件 (保持不變)
+        searchInput.addEventListener('input', (e) => {
+            generateOptions(e.target.value.trim());
+        });
+
+        // 【新增】鍵盤導航事件 (綁定在 input 上，因為焦點在那裡)
+        searchInput.addEventListener('keydown', (e) => {
+            const visibleOptions = Array.from(optionsList.querySelectorAll('.nthu-helper-custom-option'));
+            if (visibleOptions.length === 0) return;
+
+            // 找到目前 focused 的索引
+            let focusedIndex = visibleOptions.findIndex(opt => opt.classList.contains('focused'));
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                // 往下移動，若到底則停在最後 (或是循環回到 0 也可以，這裡選停住)
+                const nextIndex = focusedIndex < visibleOptions.length - 1 ? focusedIndex + 1 : visibleOptions.length - 1; // 停在最後
+                // const nextIndex = (focusedIndex + 1) % visibleOptions.length; // 循環
+                updateFocus(visibleOptions, nextIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                // 往上移動
+                const prevIndex = focusedIndex > 0 ? focusedIndex - 1 : 0;
+                updateFocus(visibleOptions, prevIndex);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (focusedIndex !== -1) {
+                    visibleOptions[focusedIndex].click(); // 模擬點擊
+                    searchInput.blur();
+                }
+            }
+        });
+
+        // 【輔助函式】更新 Focus 狀態與捲動
+        function updateFocus(options, index) {
+            options.forEach(opt => opt.classList.remove('focused'));
+            if (index >= 0 && index < options.length) {
+                const target = options[index];
+                target.classList.add('focused');
+                
+                // 自動捲動邏輯
+                const containerTop = optionsList.scrollTop;
+                const containerBottom = containerTop + optionsList.clientHeight;
+                const elemTop = target.offsetTop;
+                const elemBottom = elemTop + target.offsetHeight;
+
+                if (elemTop < containerTop) {
+                    optionsList.scrollTop = elemTop;
+                } else if (elemBottom > containerBottom) {
+                    optionsList.scrollTop = elemBottom - optionsList.clientHeight;
+                }
+            }
+        }
+
+        searchInput.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        document.addEventListener('click', () => {
+            dropdown.classList.remove('show');
+        });
+
+        dropdown.appendChild(searchInput);
+        dropdown.appendChild(optionsList);
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(dropdown);
+
+        if (selectElement.parentNode) {
+            selectElement.parentNode.insertBefore(wrapper, selectElement);
+        }
+    },
 };

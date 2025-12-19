@@ -51,7 +51,7 @@ const NthuCourseParser = {
             const matches = onclickAttr.match(/checks\((.*?)\)/);
             if (matches && matches[1]) {
                 // 將參數字串 'this.form, 'arg1', 'arg2', ...' 轉換為陣列 ['arg1', 'arg2', ...]
-                addActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^'|'$/g, ''));
+                addActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^['"]|['"]$/g, ''));
             }
         } else if (geInput) {
              // 處理通識課的志願序輸入框
@@ -60,7 +60,7 @@ const NthuCourseParser = {
                 const onclickAttr = geButton.getAttribute('onclick');
                 const matches = onclickAttr.match(/checks\((.*?)\)/);
                  if (matches && matches[1]) {
-                    addActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^'|'$/g, ''));
+                    addActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^['"]|['"]$/g, ''));
                 }
              }
         }
@@ -70,7 +70,7 @@ const NthuCourseParser = {
             const onclickAttr = syllabusButton.getAttribute('onclick');
             const matches = onclickAttr.match(/syllabus\((.*?)\)/);
             if (matches && matches[1]) {
-                syllabusActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^'|'$/g, ''));
+                syllabusActionArgs = matches[1].split(',').slice(1).map(arg => arg.trim().replace(/^['"]|['"]$/g, ''));
             }
         }
 
@@ -86,7 +86,8 @@ const NthuCourseParser = {
             isXClass: isXClass,
             addActionArgs: addActionArgs,
             syllabusActionArgs: syllabusActionArgs,
-            isGeInput: !!geInput // 標記這是否為一個需要填志願序的通識課
+            isGeInput: !!geInput, // 標記這是否為一個需要填志願序的通識課
+            element: row
         };
     },
 
@@ -179,7 +180,7 @@ const NthuCourseParser = {
      * @returns {Promise<Map<string, {enrolled: number, waiting: number}>>} - 一個 Map，鍵為科號，值為包含已選和待抽人數的物件。
      */
     async fetchAndParseCounts(departmentId) {
-        try {
+        /*try {
             console.log(`正在為系所 ${departmentId} 獲取即時人數...`);
 
             const acixstore = window.top.frames['topFrame']?.document.querySelector('input[name="ACIXSTORE"]')?.value;
@@ -258,6 +259,80 @@ const NthuCourseParser = {
 
         } catch (error) {
             console.error("抓取或解析即時人數時發生錯誤:", error);
+            return new Map();
+        }*/
+        
+        try {
+            console.log(`正在從 Cloudflare 獲取靜態課程資料...`);
+
+            // 1. 【防快取技巧】在網址後面加上時間參數，確保每次都抓到最新的，而不是舊的快取
+            const baseUrl = 'https://chiukuanhsun.github.io/NTHU-Course-result-template/';
+            const url = `${baseUrl}?t=${new Date().getTime()}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                throw new Error(`網路請求失敗: ${response.status}`);
+            }
+
+            const buffer = await response.arrayBuffer();
+            
+            // 2. 【關鍵修改】手動下載的檔案通常已經是 UTF-8 了
+            // 如果這裡用 Big5 解碼 UTF-8 的檔案，出來會全是亂碼，當然找不到欄位
+            const decoder = new TextDecoder('utf-8'); 
+            const htmlText = decoder.decode(buffer);
+
+            // --- 診斷區塊 (如果出錯，請看 Console 這裡印出什麼) ---
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            
+            // ---------------------------------------------------
+
+            const headerCells = doc.querySelectorAll('table.sortable tr.class2 td');
+            const columnIndexes = {};
+            
+            headerCells.forEach((cell, index) => {
+                // 使用 includes 並且 trim 去除空白，增加容錯率
+                const cellText = cell.innerText.trim();
+                if (cellText.includes('科號')) {
+                    columnIndexes.id = index;
+                } else if (cellText.includes('目前選上人數')) {
+                    columnIndexes.enrolled = index;
+                } else if (cellText.includes('目前待亂數人數')) {
+                    columnIndexes.waiting = index;
+                }
+            });
+
+            // 檢查欄位
+            if (columnIndexes.id === undefined || columnIndexes.enrolled === undefined || columnIndexes.waiting === undefined) {
+                console.error('【錯誤】無法定位欄位。可能是編碼錯誤或抓錯檔案。');
+                console.log('目前偵測到的所有欄位:', Array.from(headerCells).map(c => c.innerText));
+                return new Map();
+            }
+
+            const courseRows = doc.querySelectorAll('table.sortable tr.word');
+            const countsMap = new Map();
+
+            courseRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > Math.max(columnIndexes.id, columnIndexes.enrolled, columnIndexes.waiting)) {
+                    const courseId = cells[columnIndexes.id].textContent.trim().replace(/\s+/g, '');
+                    const enrolled = parseInt(cells[columnIndexes.enrolled].textContent.trim(), 10);
+                    const waiting = parseInt(cells[columnIndexes.waiting].textContent.trim(), 10);
+
+                    if (courseId && !isNaN(enrolled) && !isNaN(waiting)) {
+                        countsMap.set(courseId, { enrolled, waiting });
+                    }
+                }
+            });
+            
+            console.log(`成功解析 ${countsMap.size} 門課程的人數。`);
+            return countsMap;
+
+        } catch (error) {
+            console.error("執行過程中發生錯誤:", error);
             return new Map();
         }
     }

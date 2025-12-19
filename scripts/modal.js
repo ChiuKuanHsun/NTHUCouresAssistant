@@ -103,6 +103,7 @@ const NthuCourseModal = {
             <div class="modal-header">
                 <h2>已暫存課程清單</h2>
                 <div class="betage-label">Beta</div>
+                <div class="warning-text" style="color: red; font-size: small; margin-right: 350px;">※ 加選功能仍在測試中，可能會有錯誤。</div>
                 <button class="delete-all-btn" id="nthu-helper-delete-all-saved-courses">清空全部</button>
                 <button id="nthu-helper-modal-close">&times;</button>
             </div>
