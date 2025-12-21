@@ -47,26 +47,44 @@ const NthuCourseHelperUI = {
                       
                     
                 </div>
-                <div class="time-grid-container collapsed">
-                    <div class="time-grid-header">
-                        <h3>自訂時間篩選 <button id="nthu-helper-toggle-time-grid-btn" type="button" style="margin-bottom: 5px;">展開</button></h3>
-                    </div>
-                    <div class="strict-filter-container">
-                          <label for="nthu-helper-strict-filter" class="switch-label">嚴格時間篩選</label>
-                          <span class="info-icon">i
-                            <span class="tooltip-text">關閉狀態時為模糊搜尋，例如當點擊 W2 時，所有課程中包含 W2 時間都會顯示。開啟後為嚴格篩選，即只有時間為 W2 的課程會顯示。</span>
-                        </span>
-                          <label class="switch">
-                              <input type="checkbox" id="nthu-helper-strict-filter">
-                              <span class="slider round"></span>
-                          </label>
-                    </div>
-                    <div class="nthu-helper-time-grid">${this.createTimeGrid()}
-                        <div class="time-grid-legend">
-                            <span class="legend-color-box enrolled-slot-normal"></span> 已選課程
-                            <span class="legend-color-box enrolled-slot-ge"></span> 已選通識
+                <div class="advanced-filters" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                    <div class="time-grid-container collapsed">
+                        <div class="time-grid-header">
+                            <h3>自訂時間篩選 <button id="nthu-helper-toggle-time-grid-btn" type="button" style="margin-bottom: 5px;">展開</button></h3>
+                        </div>
+                        <div class="strict-filter-container">
+                              <label for="nthu-helper-strict-filter" class="switch-label">嚴格時間篩選</label>
+                              <span class="info-icon">i
+                                <span class="tooltip-text">關閉狀態時為模糊搜尋，例如當點擊 W2 時，所有課程中包含 W2 時間都會顯示。開啟後為嚴格篩選，即只有時間為 W2 的課程會顯示。</span>
+                            </span>
+                              <label class="switch">
+                                  <input type="checkbox" id="nthu-helper-strict-filter">
+                                  <span class="slider round"></span>
+                              </label>
+                        </div>
+                        <div class="nthu-helper-time-grid">${this.createTimeGrid()}
+                            <div class="time-grid-legend">
+                                <span class="legend-color-box enrolled-slot-normal"></span> 已選課程
+                                <span class="legend-color-box enrolled-slot-ge"></span> 已選通識
+                            </div>
                         </div>
                     </div>
+                    ${isGePage ? `
+                    <div class="ge-category-filter-container">
+                        <div class="ge-category-header">
+                            <h3>通識類別篩選</h3>
+                        </div>
+                        <div class="ge-category-options">
+                            <label><input type="checkbox" value="核心通識1"> 核心通識 1</label>
+                            <label><input type="checkbox" value="核心通識2"> 核心通識 2</label>
+                            <label><input type="checkbox" value="核心通識3"> 核心通識 3</label>
+                            <label><input type="checkbox" value="核心通識4"> 核心通識 4</label>
+                            <label><input type="checkbox" value="自然科學領域"> 自然科學領域</label>
+                            <label><input type="checkbox" value="社會科學領域"> 社會科學領域</label>
+                            <label><input type="checkbox" value="人文學領域"> 人文學領域</label>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         `;

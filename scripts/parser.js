@@ -36,6 +36,27 @@ const NthuCourseParser = {
                              
         const isXClass = restrictionsText.toUpperCase().includes('X-CLASS');
 
+        // Extract GE Category
+        let geCategory = null;
+        if (courseTitleCellText.includes('核心通識')) {
+             // Extract number 1-6
+             const match = courseTitleCellText.match(/核心通識\s*(\d)/);
+             if (match) {
+                 geCategory = `核心通識${match[1]}`;
+             } else if (courseTitleCellText.includes('Core GE courses')) {
+                 // Fallback to English if Chinese parsing fails but English is present
+                 const matchEn = courseTitleCellText.match(/Core GE courses\s*(\d)/);
+                 if (matchEn) {
+                     geCategory = `核心通識${matchEn[1]}`;
+                 }
+             }
+        } else if (courseTitleCellText.includes('自然科學領域') || courseTitleCellText.includes('Natural')) {
+            geCategory = '自然科學領域';
+        } else if (courseTitleCellText.includes('社會科學領域') || courseTitleCellText.includes('Social')) {
+            geCategory = '社會科學領域';
+        } else if (courseTitleCellText.includes('人文學領域') || courseTitleCellText.includes('Humanities')) {
+            geCategory = '人文學領域';
+        }
 
         let addActionArgs = null;
         let syllabusActionArgs = null;
@@ -83,6 +104,7 @@ const NthuCourseParser = {
             room: row.cells[columnIndexes.room].innerText.trim(),
             teacher: row.cells[columnIndexes.teacher].innerText.trim(),
             isGe: isGeCourse,
+            geCategory: geCategory,
             isXClass: isXClass,
             addActionArgs: addActionArgs,
             syllabusActionArgs: syllabusActionArgs,
@@ -180,7 +202,7 @@ const NthuCourseParser = {
      * @returns {Promise<Map<string, {enrolled: number, waiting: number}>>} - 一個 Map，鍵為科號，值為包含已選和待抽人數的物件。
      */
     async fetchAndParseCounts(departmentId) {
-        /*try {
+        try {
             console.log(`正在為系所 ${departmentId} 獲取即時人數...`);
 
             const acixstore = window.top.frames['topFrame']?.document.querySelector('input[name="ACIXSTORE"]')?.value;
@@ -260,9 +282,9 @@ const NthuCourseParser = {
         } catch (error) {
             console.error("抓取或解析即時人數時發生錯誤:", error);
             return new Map();
-        }*/
+        }
         
-        try {
+        /*try {
             console.log(`正在從 Cloudflare 獲取靜態課程資料...`);
 
             // 1. 【防快取技巧】在網址後面加上時間參數，確保每次都抓到最新的，而不是舊的快取
@@ -334,7 +356,7 @@ const NthuCourseParser = {
         } catch (error) {
             console.error("執行過程中發生錯誤:", error);
             return new Map();
-        }
+        }*/
     }
 
 };

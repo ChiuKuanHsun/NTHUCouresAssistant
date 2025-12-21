@@ -99,6 +99,47 @@
     overflow: hidden;
 }
 
+/* --- 通識類別篩選 --- */
+.ge-category-filter-container {
+    margin-top: 15px;
+    flex: 1; /* 讓它在 flex 容器中佔據剩餘空間 */
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.ge-category-header {
+    white-space: nowrap;
+}
+.ge-category-header h3 {
+    margin: 0;
+    border-bottom: none;
+}
+
+.ge-category-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 0;
+}
+
+.ge-category-options label {
+    user-select: none;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    background-color: #f9f9f9;
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+.ge-category-options label:hover {
+    background-color: #eef;
+}
+.ge-category-options input[type="checkbox"] {
+    margin-right: 5px;
+}
+
 /* 篩選模式按鈕 */
 .time-grid-container.collapsed .strict-filter-container {
     max-height: 0;

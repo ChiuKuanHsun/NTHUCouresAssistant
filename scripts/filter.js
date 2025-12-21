@@ -111,6 +111,9 @@ const NthuCourseFilter = {
         const allowXClassClash = allowXClassClashCheckbox ? allowXClassClashCheckbox.checked : false;
 
         //const rows = table.querySelectorAll('tbody tr');
+        
+        // Get selected categories
+        const selectedCategories = Array.from(document.querySelectorAll('.ge-category-options input:checked')).map(cb => cb.value);
 
         courses.forEach((course) => {
             const row = course.element;
@@ -128,7 +131,15 @@ const NthuCourseFilter = {
             // 衝堂邏輯是「AND」，不能與已選課程衝堂
             const clashMatch = !hideClash || !this.isCourseClashing(course, enrolledCourses, allowGeClash, allowXClassClash);
 
-            if (nameMatch && teacherMatch && courseNoMatch && timeSelectMatch && clashMatch) {
+            // Category Check
+            let categoryMatch = true;
+            if (selectedCategories.length > 0) {
+                if (!course.geCategory || !selectedCategories.includes(course.geCategory)) {
+                    categoryMatch = false;
+                }
+            }
+
+            if (nameMatch && teacherMatch && courseNoMatch && timeSelectMatch && clashMatch && categoryMatch) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';

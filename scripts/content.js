@@ -313,6 +313,18 @@ function setupEventListeners(courses, table, backToTopButton) {
     if (strictFilterCheckbox) {
         strictFilterCheckbox.addEventListener('change', runFilter);
     }
+    
+    // --- 通識類別篩選器的事件 ---
+    const geCategoryOptions = document.querySelector('.ge-category-options');
+
+    if (geCategoryOptions) {
+        geCategoryOptions.addEventListener('change', (event) => {
+            if (event.target.tagName === 'INPUT' && event.target.type === 'checkbox') {
+                runFilter();
+            }
+        });
+    }
+
     // --- 時間篩選器的事件 ---
     if (timeGridToggleBtn && timeGridContainer) {
         timeGridToggleBtn.addEventListener('click', (event) => {
