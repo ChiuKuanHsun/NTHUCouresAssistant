@@ -139,12 +139,6 @@ function executeInPageContext(functionName, argsArray) {
 
 // 頁面載入後執行的主函式
 async function main() {
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('scripts/execute.js');
-    (document.head || document.documentElement).appendChild(script);
-    script.onload = () => script.remove();
-
-
     const data = await chrome.storage.sync.get('savedCourses');
     savedCourses = data.savedCourses || [];
     if (window.location.href.includes('JH713003.php') || window.location.href.includes('JH761003.php')) {
@@ -163,7 +157,14 @@ async function main() {
     if (!courseTable) {
         return;
     }
-    
+
+    // 只在真正需要（含課程表格）的 frame 注入 execute.js，
+    // 避免在 frameset 的每一個 frame、每次重新載入時都注入造成額外負擔。
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('scripts/execute.js');
+    (document.head || document.documentElement).appendChild(script);
+    script.onload = () => script.remove();
+
     NthuCourseHelperUI.makeSelectSearchable(deptSelect);
 
     const classSelect = document.querySelector('select[name="new_class"]');
@@ -300,9 +301,16 @@ function setupEventListeners(courses, table, backToTopButton) {
         container.classList.toggle('collapsed');
         toggleBtn.textContent = container.classList.contains('collapsed') ? '展開' : '收合';
     });
-    nameFilter.addEventListener('input', runFilter);
-    teacherFilter.addEventListener('input', runFilter);
-    courseNoFilter.addEventListener('input', runFilter);
+    // 文字輸入用 debounce：每次按鍵都跑 filterAll 會對數百列逐一改 display，
+    // 等於每個鍵都重排整張表。延遲到使用者停止輸入後再跑一次。
+    let filterTimer = null;
+    const debouncedFilter = () => {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(runFilter, 150);
+    };
+    nameFilter.addEventListener('input', debouncedFilter);
+    teacherFilter.addEventListener('input', debouncedFilter);
+    courseNoFilter.addEventListener('input', debouncedFilter);
     hideClashCheckbox.addEventListener('change', runFilter);
     if (allowGeClashCheckbox) {
         allowGeClashCheckbox.addEventListener('change', runFilter);
@@ -362,13 +370,17 @@ function setupEventListeners(courses, table, backToTopButton) {
     });
 
     // --- 回到最上方按鈕的事件 ---
+    // 用 requestAnimationFrame 節流，避免每個 scroll 事件都強制讀取 scrollY、
+    // 造成長課程清單滑動時的卡頓；passive 讓瀏覽器不必等待 listener 即可捲動。
+    let scrollTicking = false;
     window.addEventListener('scroll', () => {
-        if (window.scrollY > 200) {
-            backToTopButton.classList.add('visible');
-        } else {
-            backToTopButton.classList.remove('visible');
-        }
-    });
+        if (scrollTicking) return;
+        scrollTicking = true;
+        requestAnimationFrame(() => {
+            backToTopButton.classList.toggle('visible', window.scrollY > 200);
+            scrollTicking = false;
+        });
+    }, { passive: true });
     backToTopButton.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });

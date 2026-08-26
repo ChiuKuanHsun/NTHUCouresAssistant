@@ -109,7 +109,7 @@ const NthuCourseHelperUI = {
             if (row.cells.length > 1) { // 確保是課程行
                 const courseIdCell = row.cells[1];
                 if (courseIdCell) {
-                    const courseId = courseIdCell.innerText.trim().replace(/\s+/g, '');
+                    const courseId = courseIdCell.textContent.trim().replace(/\s+/g, '');
                     const newCell = row.insertCell(row.cells.length - 1); // 插入到倒數第二個位置
                     newCell.align = 'center';
                     newCell.innerHTML = `<div class="live-count-cell" id="count-${courseId}">---</div>`;
@@ -138,20 +138,14 @@ const NthuCourseHelperUI = {
         rows.forEach((row, index) => {
             if (!courses[index]) return; // 如果該行沒有解析出課程資料，則跳過
 
-            // 在科目名稱欄位新增按鈕
+            // 只在科目名稱欄位放一顆查詢按鈕即可：點下去的選單本來就同時提供
+            // 「課程名稱／教師名稱／課名＋教師」的查詢，教師欄那顆是多餘的，
+            // 拿掉可讓數百列的頁面少注入一半的按鈕、降低載入與重繪負擔。
             const nameCell = row.cells[2];
             if (nameCell) {
                 nameCell.style.position = 'relative';
                 const searchBtn = this.createSearchButton(index);
                 nameCell.appendChild(searchBtn);
-            }
-            
-            // 在教師欄位新增按鈕
-            const teacherCell = row.cells[6];
-            if (teacherCell) {
-                teacherCell.style.position = 'relative';
-                const searchBtn = this.createSearchButton(index);
-                teacherCell.appendChild(searchBtn);
             }
         });
     },
@@ -359,16 +353,32 @@ const NthuCourseHelperUI = {
         input.id = uniqueId;
         input.checked = isSaved;
 
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '15');
-        svg.setAttribute('viewBox', '0 0 50 70');
-        svg.setAttribute('fill', 'none');
-        svg.classList.add('svgIcon');
-        svg.innerHTML = `<path d="M46 62.0085L46 3.88139L3.99609 3.88139L3.99609 62.0085L24.5 45.5L46 62.0085Z" stroke="black" stroke-width="7"></path>`;
+        // 用 cloneNode 複製已快取的 SVG 範本，避免每一列都重新解析 innerHTML
+        // （課程清單動輒上百列時，重複解析會造成載入時的明顯卡頓）。
+        const svg = this._getBookmarkSvgTemplate().cloneNode(true);
 
         label.appendChild(input);
         label.appendChild(svg);
         return label;
+    },
+
+    // 延遲建立並快取書籤的 SVG 範本，供 createBookmarkButton 複製使用。
+    _bookmarkSvgTemplate: null,
+    _getBookmarkSvgTemplate() {
+        if (!this._bookmarkSvgTemplate) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '15');
+            svg.setAttribute('viewBox', '0 0 50 70');
+            svg.setAttribute('fill', 'none');
+            svg.classList.add('svgIcon');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M46 62.0085L46 3.88139L3.99609 3.88139L3.99609 62.0085L24.5 45.5L46 62.0085Z');
+            path.setAttribute('stroke', 'black');
+            path.setAttribute('stroke-width', '7');
+            svg.appendChild(path);
+            this._bookmarkSvgTemplate = svg;
+        }
+        return this._bookmarkSvgTemplate;
     },
 
     /**
@@ -383,7 +393,7 @@ const NthuCourseHelperUI = {
         rows.forEach((row, index) => {
             const courseIdCell = row.cells[1];
             if (!courseIdCell) return;
-            const courseId = courseIdCell.innerText.trim();
+            const courseId = courseIdCell.textContent.trim();
 
             if (row.cells.length > 1 && (row.querySelector('input[type="button"]') || row.querySelector('input[type="text"]'))) {
                 const firstCell = row.cells[0];

@@ -31,18 +31,11 @@
     margin-bottom: 5px;
 }
 
-.nthu-helper-content {
-    transition: all 0.3s ease-in-out;
-    max-height: 1000px; /* 給一個足夠大的高度以便計算動畫 */
-}
-
+/* 不要用 max-height 動畫：此面板在課程表格正上方，動畫期間每一影格都會
+   讓底下數百列的表格重新排版＋重繪，造成展開/收合時的卡頓。改用 display
+   直接切換，收合時內容完全不渲染，展開只觸發一次重排。 */
 .nthu-helper-container.collapsed .nthu-helper-content {
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-    opacity: 0;
+    display: none;
 }
 
 .nthu-helper-container h2, .nthu-helper-container h3 {
@@ -89,14 +82,10 @@
   gap: 2px;
   width: fit-content; /* 讓寬度由內容決定 */
   margin-top: 10px;
-  transition: all 0.3s ease-in-out;
-  max-height: 1000px;
 }
+/* 同上：避免 max-height 動畫導致整張表格反覆重排，改用 display 直接切換 */
 .time-grid-container.collapsed .nthu-helper-time-grid {
-    max-height: 0;
-    opacity: 0;
-    margin-top: 0;
-    overflow: hidden;
+    display: none;
 }
 
 /* --- 通識類別篩選 --- */
