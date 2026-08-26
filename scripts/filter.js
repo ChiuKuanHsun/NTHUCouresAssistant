@@ -56,18 +56,35 @@ const NthuCourseFilter = {
         return false; // 沒有發現不可饒恕的衝堂
     },
     
-    checkTimeMatch(courseTimes, selectedTimes, isStrict) {
+    // 讀取目前的時間篩選模式：'loose'(一般) / 'strict'(嚴格) / 'inverse'(反向)
+    getTimeFilterMode() {
+        const checked = document.querySelector('input[name="nthu-helper-time-filter-mode"]:checked');
+        return checked ? checked.value : 'loose';
+    },
+
+    checkTimeMatch(courseTimes, selectedTimes, mode) {
         // 如果沒有選擇任何時間格，則所有課程都通過篩選
         if (selectedTimes.length === 0) {
             return true;
         }
-        
+
+        if (mode === 'inverse') {
+            // --- 反向模式 ---
+            // 條件：課程的所有時段都必須落在選取範圍內，只要有任一時段沒被選到就排除。
+            // 沒有時間的課程（例如專題、獨立研究）不含任何未選取的時段，因此保留。
+            if (courseTimes.length === 0) {
+                return true;
+            }
+            const selectedSet = new Set(selectedTimes.map(t => `${t.day}-${t.slot}`));
+            return courseTimes.every(ct => selectedSet.has(`${ct.day}-${ct.slot}`));
+        }
+
         // 如果課程本身沒有時間，則不符合篩選
         if (courseTimes.length === 0) {
             return false;
         }
 
-        if (isStrict) {
+        if (mode === 'strict') {
             // --- 嚴格模式 ---
             // 條件：課程的所有時間格，都必須在使用者選擇的範圍內，且兩者數量必須完全相等。
 
@@ -82,7 +99,7 @@ const NthuCourseFilter = {
             return courseTimes.every(ct => selectedSet.has(`${ct.day}-${ct.slot}`));
 
         } else {
-            // --- 模糊模式 (目前模式) ---
+            // --- 一般模式（模糊）---
             // 條件：課程的任一時間格，只要有出現在使用者選擇的範圍內，就視為符合。
             for (const courseTime of courseTimes) {
                 for (const selectedTime of selectedTimes) {
@@ -101,7 +118,7 @@ const NthuCourseFilter = {
         const teacherQuery = document.getElementById('nthu-helper-filter-teacher').value.toLowerCase();
         const courseNoQuery = document.getElementById('nthu-helper-filter-courseNo').value.toLowerCase();
         const hideClash = document.getElementById('nthu-helper-hide-clash').checked;
-        const strictFilter = document.getElementById('nthu-helper-strict-filter').checked;
+        const timeFilterMode = this.getTimeFilterMode();
         const selectedTimes = this.getSelectedTimeSlots();
 
         const allowGeClashCheckbox = document.getElementById('nthu-helper-allow-ge-clash');
@@ -124,8 +141,8 @@ const NthuCourseFilter = {
             const courseNoMatch = !courseNoQuery || course.id.toLowerCase().includes(courseNoQuery);
             
 
-            const timeSelectMatch = this.checkTimeMatch(course.time, selectedTimes, strictFilter);
-            // 注意：時間格子的邏輯是「OR」，只要課程時間包含任一被選中的格子，就符合條件
+            const timeSelectMatch = this.checkTimeMatch(course.time, selectedTimes, timeFilterMode);
+            // 注意：一般模式下時間格子的邏輯是「OR」，只要課程時間包含任一被選中的格子，就符合條件
             //const timeSelectMatch = selectedTimes.length === 0 || this.isTimeSlotClashing(course.time, selectedTimes);
             
             // 衝堂邏輯是「AND」，不能與已選課程衝堂

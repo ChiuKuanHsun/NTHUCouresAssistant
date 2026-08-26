@@ -52,15 +52,16 @@ const NthuCourseHelperUI = {
                         <div class="time-grid-header">
                             <h3>自訂時間篩選 <button id="nthu-helper-toggle-time-grid-btn" type="button" style="margin-bottom: 5px;">展開</button></h3>
                         </div>
-                        <div class="strict-filter-container">
-                              <label for="nthu-helper-strict-filter" class="switch-label">嚴格時間篩選</label>
+                        <div class="time-filter-mode-container">
+                              <span class="switch-label">時間篩選模式</span>
                               <span class="info-icon">i
-                                <span class="tooltip-text">關閉狀態時為模糊搜尋，例如當點擊 W2 時，所有課程中包含 W2 時間都會顯示。開啟後為嚴格篩選，即只有時間為 W2 的課程會顯示。</span>
+                                <span class="tooltip-text tooltip-text-wrap" style="left: 67px;">一般：模糊搜尋，課程只要有任一時段被選中就會顯示，例如點擊 W2 時所有包含 W2 的課程都會顯示。<br>嚴格：課程時間必須與選取的時段完全相同，即只有時間剛好是 W2 的課程會顯示。<br>反向：只顯示上課時間「全部」都落在選取範圍內的課程，含有未選取時段的課程會被排除，例如選取 W1~W7 時，時間為 W1T1 的課程會因為 T1 沒被選取而排除。</span>
                             </span>
-                              <label class="switch">
-                                  <input type="checkbox" id="nthu-helper-strict-filter">
-                                  <span class="slider round"></span>
-                              </label>
+                              <div class="time-filter-mode-options">
+                                  <label><input type="radio" name="nthu-helper-time-filter-mode" value="loose" checked><span>一般</span></label>
+                                  <label><input type="radio" name="nthu-helper-time-filter-mode" value="strict"><span>嚴格</span></label>
+                                  <label><input type="radio" name="nthu-helper-time-filter-mode" value="inverse"><span>反向</span></label>
+                              </div>
                         </div>
                         <div class="nthu-helper-time-grid">${this.createTimeGrid()}
                             <div class="time-grid-legend">

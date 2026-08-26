@@ -231,7 +231,7 @@ function setupEventListeners(courses, table, backToTopButton) {
     const timeGridContainer = document.querySelector('.time-grid-container');
     const timeGridToggleBtn = document.getElementById('nthu-helper-toggle-time-grid-btn');
     const allowGeClashCheckbox = document.getElementById('nthu-helper-allow-ge-clash');
-    const strictFilterCheckbox = document.getElementById('nthu-helper-strict-filter');
+    const timeFilterModeOptions = document.querySelector('.time-filter-mode-options');
     const allowXClassClashCheckbox = document.getElementById('nthu-helper-allow-xclass-clash');
     const refreshBtn = document.getElementById('nthu-helper-refresh-counts-btn');
     const saveBtn = document.getElementById('nthu-helper-save-schedule-btn');
@@ -318,8 +318,8 @@ function setupEventListeners(courses, table, backToTopButton) {
     if (allowXClassClashCheckbox) {
         allowXClassClashCheckbox.addEventListener('change', runFilter);
     }
-    if (strictFilterCheckbox) {
-        strictFilterCheckbox.addEventListener('change', runFilter);
+    if (timeFilterModeOptions) {
+        timeFilterModeOptions.addEventListener('change', runFilter);
     }
     
     // --- 通識類別篩選器的事件 ---
