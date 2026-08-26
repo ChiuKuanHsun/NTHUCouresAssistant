@@ -349,12 +349,7 @@ function setupEventListeners(courses, table, backToTopButton) {
             }
         });
     }
-    timeGrid.addEventListener('click', (event) => {
-        if (event.target.classList.contains('time-slot')) {
-            event.target.classList.toggle('selected');
-            runFilter();
-        }
-    });
+    setupTimeGridDragSelection(timeGrid, runFilter);
 
     // --- 課程列表的事件 ---
     table.addEventListener('click', (event) => {
@@ -417,6 +412,122 @@ function setupEventListeners(courses, table, backToTopButton) {
     if (savedListButton) {
         savedListButton.addEventListener('click', openSavedCoursesModal);
     }
+}
+
+/**
+ * 時間格的拖曳勾選。
+ * 按住滑鼠後拖曳，滑鼠劃過的每一格都會被點亮（或取消），只有實際經過的痕跡會改變。
+ * 單純點一下等同於只劃過一格，行為和原本的點擊切換相同。
+ * 點亮或取消由起點格決定：起點原本沒選 -> 一路點亮；原本已選 -> 一路取消。
+ * @param {HTMLElement} timeGrid - .nthu-helper-time-grid 元素
+ * @param {Function} runFilter - 拖曳結束後觸發的篩選函式
+ */
+function setupTimeGridDragSelection(timeGrid, runFilter) {
+    if (!timeGrid) return;
+
+    let dragging = false;
+    let mode = 'select';   // 'select' 或 'deselect'
+    let lastCell = null;   // 上一次處理到的格子，用來補上快速拖曳跳過的格
+    let snapshot = null;   // 拖曳開始前的勾選狀態，Esc 取消時還原用
+    let changed = false;   // 這次拖曳是否真的改動了勾選狀態
+
+    const cellOf = (element) => {
+        if (!element || !element.classList || !element.classList.contains('time-slot')) return null;
+        return {
+            day: parseInt(element.dataset.day, 10),
+            row: parseInt(element.dataset.row, 10)
+        };
+    };
+
+    const applyTo = (day, row) => {
+        const slot = timeGrid.querySelector(`.time-slot[data-day="${day}"][data-row="${row}"]`);
+        if (!slot) return;
+        const shouldSelect = (mode === 'select');
+        // 已經是目標狀態就不動，來回劃過同一格才不會一直翻面
+        if (slot.classList.contains('selected') === shouldSelect) return;
+        slot.classList.toggle('selected', shouldSelect);
+        changed = true;
+    };
+
+    // pointermove 的取樣頻率有限，拖快一點就會跳過中間的格子；
+    // 這裡沿著上一格到目前這一格的直線把中間補起來，痕跡才不會斷掉。
+    const paintTrail = (cell) => {
+        if (lastCell) {
+            const steps = Math.max(
+                Math.abs(cell.day - lastCell.day),
+                Math.abs(cell.row - lastCell.row)
+            );
+            for (let step = 1; step < steps; step++) {
+                const ratio = step / steps;
+                applyTo(
+                    Math.round(lastCell.day + (cell.day - lastCell.day) * ratio),
+                    Math.round(lastCell.row + (cell.row - lastCell.row) * ratio)
+                );
+            }
+        }
+        applyTo(cell.day, cell.row);
+        lastCell = cell;
+    };
+
+    const endDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        lastCell = null;
+        snapshot = null;
+        timeGrid.classList.remove('drag-selecting');
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', endDrag);
+        document.removeEventListener('pointercancel', cancelDrag);
+        document.removeEventListener('keydown', onKeyDown);
+        if (changed) runFilter();
+    };
+
+    // 中途按 Esc 取消，把勾選狀態還原成拖曳前
+    const cancelDrag = () => {
+        if (!dragging) return;
+        timeGrid.querySelectorAll('.time-slot').forEach(slot => {
+            slot.classList.toggle('selected', snapshot.has(slot));
+        });
+        changed = false;
+        endDrag();
+    };
+
+    const onKeyDown = (event) => {
+        if (event.key === 'Escape') cancelDrag();
+    };
+
+    const onPointerMove = (event) => {
+        if (!dragging) return;
+        // 事件掛在 document 上，用座標找出游標實際所在的格子
+        const cell = cellOf(document.elementFromPoint(event.clientX, event.clientY));
+        if (!cell) return;
+        if (lastCell && cell.day === lastCell.day && cell.row === lastCell.row) return;
+        paintTrail(cell);
+    };
+
+    timeGrid.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        const cell = cellOf(event.target);
+        if (!cell) return;
+
+        event.preventDefault(); // 避免拖曳時選到頁面文字
+        dragging = true;
+        changed = false;
+        lastCell = null;
+        mode = event.target.classList.contains('selected') ? 'deselect' : 'select';
+        snapshot = new Set();
+        timeGrid.querySelectorAll('.time-slot').forEach(slot => {
+            if (slot.classList.contains('selected')) snapshot.add(slot);
+        });
+
+        timeGrid.classList.add('drag-selecting');
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', cancelDrag);
+        document.addEventListener('keydown', onKeyDown);
+
+        paintTrail(cell); // 只點一下時，等同於切換這一格
+    });
 }
 
 // 執行主函式

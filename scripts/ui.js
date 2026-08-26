@@ -68,6 +68,7 @@ const NthuCourseHelperUI = {
                                 <span class="legend-color-box enrolled-slot-ge"></span> 已選通識
                             </div>
                         </div>
+                        <div class="time-grid-hint">提示：按住並拖曳，滑鼠劃過的時段都會一併勾選（起點格未選取為勾選，已選取則為取消）</div>
                     </div>
                     ${isGePage ? `
                     <div class="ge-category-filter-container">
@@ -122,10 +123,11 @@ const NthuCourseHelperUI = {
     createTimeGrid() {
         let gridHTML = '<div class="time-header"><div></div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div>日</div></div>';
         const slots = ['1', '2', '3', '4', 'n', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd'];
-        slots.forEach(slot => {
+        slots.forEach((slot, rowIndex) => {
             gridHTML += `<div class="time-row"><div class="time-label">${slot}</div>`;
             for (let day = 1; day <= 7; day++) {
-                gridHTML += `<div class="time-slot" data-day="${day}" data-slot="${slot}"></div>`;
+                // data-row 是節次在格子中的列序，拖曳勾選時用來補上被跳過的中間格
+                gridHTML += `<div class="time-slot" data-day="${day}" data-slot="${slot}" data-row="${rowIndex}"></div>`;
             }
             gridHTML += '</div>';
         });

@@ -87,6 +87,14 @@
 .time-grid-container.collapsed .nthu-helper-time-grid {
     display: none;
 }
+.time-grid-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #666;
+}
+.time-grid-container.collapsed .time-grid-hint {
+    display: none;
+}
 
 /* --- 通識類別篩選 --- */
 .ge-category-filter-container {
@@ -291,9 +299,26 @@ input:checked + .slider:before {
   border: 1px solid #ddd;
   cursor: pointer;
   transition: background-color 0.2s;
+  /* 拖曳框選時不要讓瀏覽器把格子當成可選取的文字 */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
 }
 .time-slot:hover {
   background-color: #e0e0e0;
+}
+/* 拖曳中：關掉 hover 與過渡，讓框選範圍即時反映，不會被單格 hover 顏色干擾 */
+.nthu-helper-time-grid.drag-selecting .time-slot {
+  transition: none;
+}
+.nthu-helper-time-grid.drag-selecting .time-slot:hover {
+  background-color: #f0f0f0;
+}
+.nthu-helper-time-grid.drag-selecting .time-slot.enrolled-slot-normal:hover {
+  background-color: #ffdddd;
+}
+.nthu-helper-time-grid.drag-selecting .time-slot.enrolled-slot-ge:hover {
+  background-color: #fffacd;
 }
 .time-slot.selected {
   background-color: #3498db !important; /* 使用 !important 以覆蓋標示顏色 */
