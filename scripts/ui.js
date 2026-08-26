@@ -429,6 +429,48 @@ const NthuCourseHelperUI = {
         return button;
     },
     /**
+     * 關鍵字是否含中文（或其他 CJK 字元）。
+     * 中文沒有詞界，只能用子字串比對；英文若也用子字串，
+     * 搜「GE」就會命中 Intelli(ge)nce、Colle(ge) 這類字中片段。
+     */
+    _hasCJK(str) {
+        return /[㐀-鿿豈-﫿]/.test(str);
+    },
+
+    /**
+     * 把選項文字切成可比對的英文單字／數字串。
+     * 中文字元本身不是 [a-z0-9]，會自動成為分隔符。
+     */
+    _tokenize(text) {
+        return text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    },
+
+    /**
+     * 單一關鍵字對單一選項的比對，回傳相關度分級（數字越小越相關），不符合回傳 -1。
+     *   0 = 系所代碼完全相同     GE   → GE
+     *   1 = 系所代碼開頭相符     GE   → GEC / GEU
+     *   2 = 名稱有單字從頭相符   ge   → General；中文則為子字串
+     *   3 = 出現在名稱任何位置   ge   → IntelliGEnce（只在前三級全無結果時才啟用）
+     * @param {string} term - 已轉小寫的單一關鍵字
+     */
+    _rankOption(term, value, text) {
+        const code = value.toLowerCase();
+        const name = text.toLowerCase();
+
+        if (code === term) return 0;
+        if (code.startsWith(term)) return 1;
+
+        // 中文關鍵字沒有詞界可用，直接子字串比對
+        if (this._hasCJK(term)) {
+            return name.includes(term) ? 2 : -1;
+        }
+
+        if (this._tokenize(name).some(word => word.startsWith(term))) return 2;
+
+        return name.includes(term) ? 3 : -1;
+    },
+
+    /**
      * 【新增】讓下拉式選單具有搜尋功能
      * @param {HTMLSelectElement} selectElement - 目標 select 元素
      */
@@ -463,13 +505,32 @@ const NthuCourseHelperUI = {
             optionsList.innerHTML = '';
             let hasMatch = false; // 用於判斷是否有內容
 
+            // 以空白拆成多個關鍵字，每個都要命中（例如「general education」）
+            const terms = filterText.trim().toLowerCase().split(/\s+/).filter(Boolean);
+
+            const scored = [];
             Array.from(selectElement.options).forEach((opt, index) => {
+                let rank = 0;
+                for (const term of terms) {
+                    const termRank = this._rankOption(term, opt.value, opt.text);
+                    if (termRank === -1) return;          // 任一關鍵字不符就淘汰
+                    rank = Math.max(rank, termRank);      // 以最弱的一項代表整體相關度
+                }
+                scored.push({ opt, index, rank });
+            });
+
+            // 只有在「代碼／單字開頭」完全沒有結果時，才退回字中片段的寬鬆比對。
+            // 這樣搜「GE」會得到 GE / GEC / GEU，而不會混進
+            // AIA（…Intelli(ge)nce Colle(ge)…）這種只是字母剛好連在一起的系所。
+            const strict = scored.filter(s => s.rank < 3);
+            const results = strict.length > 0 ? strict : scored;
+
+            // 相關度高的排前面；同級維持原本選單的順序
+            results.sort((a, b) => a.rank - b.rank || a.index - b.index);
+
+            results.forEach(({ opt, index }) => {
                 const text = opt.text;
                 const value = opt.value;
-                
-                if (filterText && !text.toLowerCase().includes(filterText.toLowerCase()) && !value.toLowerCase().includes(filterText.toLowerCase())) {
-                    return;
-                }
 
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'nthu-helper-custom-option';

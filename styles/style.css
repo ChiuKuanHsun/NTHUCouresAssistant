@@ -849,10 +849,9 @@ td:hover .nthu-helper-search-btn {
 
 /* --- 【新增】暫存清單 Modal 內的按鈕樣式 --- */
 .saved-courses-table .action-cell {
-    text-align: left;
     vertical-align: middle;
-    max-width: 150px;
     text-align: center;
+    white-space: nowrap;
 }
 .saved-courses-table .action-cell .btn2 {
     font-size: 12px;
@@ -878,14 +877,14 @@ td:hover .nthu-helper-search-btn {
     padding: 4px 6px;
 }
 .saved-courses-table .action-cell input[type="text"] {
-    width: 100px; /* 限制志願序輸入框寬度 */
+    width: 64px; /* 限制志願序輸入框寬度，讓它和「加 Add」按鈕能並排 */
     margin-right: 5px;
 }
 
 /* --- 【新增】暫存清單 Modal 樣式 --- */
 #nthu-helper-modal-content.saved-courses-modal {
-    width: 80%;
-    max-width: 900px; /* 設定最大寬度 */
+    width: 92%;
+    max-width: 1400px; /* 設定最大寬度 */
     height: auto; /* 高度由內容決定 */
     max-height: 85vh;
 }
@@ -899,6 +898,16 @@ td:hover .nthu-helper-search-btn {
 .modal-header h2 {
     margin: 0;
     font-size: 1.2em;
+    white-space: nowrap;
+}
+/* 標題／Beta／警語靠左成一組，右側按鈕靠右，不再用寫死的 margin 撐開 */
+.saved-courses-modal .modal-header {
+    gap: 10px;
+}
+.saved-courses-modal .modal-header .warning-text {
+    color: red;
+    font-size: small;
+    margin-right: auto;
 }
 .modal-body {
     padding: 15px;
@@ -907,15 +916,36 @@ td:hover .nthu-helper-search-btn {
 .saved-courses-table {
     width: 100%;
     border-collapse: collapse;
+    /* 固定版面：欄寬由下方比例決定，不再被最長的課名撐歪 */
+    table-layout: fixed;
 }
 .saved-courses-table th, .saved-courses-table td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
+    word-break: break-word;
 }
 .saved-courses-table th {
     background-color: #f2f2f2;
 }
+
+/* --- 各欄位寬度：科號／課名／教師／學分／時間／加選／大綱／操作 --- */
+.saved-courses-table th:nth-child(1),
+.saved-courses-table td:nth-child(1) { width: 12%; }
+.saved-courses-table th:nth-child(2),
+.saved-courses-table td:nth-child(2) { width: 26%; }
+.saved-courses-table th:nth-child(3),
+.saved-courses-table td:nth-child(3) { width: 11%; }
+.saved-courses-table th:nth-child(4),
+.saved-courses-table td:nth-child(4) { width: 5%;  text-align: center; }
+.saved-courses-table th:nth-child(5),
+.saved-courses-table td:nth-child(5) { width: 12%; }
+.saved-courses-table th:nth-child(6),
+.saved-courses-table td:nth-child(6) { width: 16%; }
+.saved-courses-table th:nth-child(7),
+.saved-courses-table td:nth-child(7) { width: 8%;  }
+.saved-courses-table th:nth-child(8),
+.saved-courses-table td:nth-child(8) { width: 10%; text-align: center; }
 .no-saved-courses {
     text-align: center;
     color: #888;

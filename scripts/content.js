@@ -19,6 +19,59 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 let savedCourses = [];
 
+// 暫存清單改存在 storage.local。
+// storage.sync 的 QUOTA_BYTES_PER_ITEM 只有 8KB，整份清單存在同一個 key，
+// 約 19~20 筆就會超過而讓 set() 靜默失敗；local 的額度是 10MB。
+const SAVED_COURSES_KEY = 'savedCourses';
+
+/**
+ * 只保留暫存清單真正會用到的欄位。
+ * 課程物件原本帶有 element（DOM 節點）等無法序列化又佔空間的欄位。
+ */
+function toSavedCourse(course) {
+    return {
+        id: course.id,
+        name: course.name,
+        teacher: course.teacher,
+        credit: course.credit,
+        time: course.time,
+        addActionArgs: course.addActionArgs,
+        syllabusActionArgs: course.syllabusActionArgs,
+        isGeInput: course.isGeInput
+    };
+}
+
+function persistSavedCourses(callback) {
+    chrome.storage.local.set({ [SAVED_COURSES_KEY]: savedCourses }, () => {
+        // 舊版存在 sync 時超過 8KB 會在這裡靜默失敗，導致第 20 筆之後存不進去
+        if (chrome.runtime.lastError) {
+            console.error('暫存清單儲存失敗：', chrome.runtime.lastError.message);
+            alert('暫存清單儲存失敗：' + chrome.runtime.lastError.message);
+        }
+        if (callback) callback();
+    });
+}
+
+/**
+ * 讀取暫存清單，並把舊版存在 storage.sync 的資料搬到 local。
+ */
+async function loadSavedCourses() {
+    const local = await chrome.storage.local.get(SAVED_COURSES_KEY);
+    if (Array.isArray(local[SAVED_COURSES_KEY])) {
+        return local[SAVED_COURSES_KEY];
+    }
+
+    const sync = await chrome.storage.sync.get(SAVED_COURSES_KEY);
+    const legacy = sync[SAVED_COURSES_KEY];
+    if (Array.isArray(legacy) && legacy.length > 0) {
+        const migrated = legacy.map(toSavedCourse);
+        await chrome.storage.local.set({ [SAVED_COURSES_KEY]: migrated });
+        await chrome.storage.sync.remove(SAVED_COURSES_KEY);
+        return migrated;
+    }
+    return [];
+}
+
 function updateSavedListButton() {
     const btn = document.getElementById('nthu-helper-saved-list-btn');
     if (!btn) return;
@@ -38,12 +91,11 @@ function updateSavedListButton() {
 }
 
 function openSavedCoursesModal(buttonRect) {
-   const handleRemoveCourse = (indexToRemove) => {
+   const handleRemoveCourse = (courseIdToRemove) => {
         // 移除所有課程
-        if (indexToRemove === -1) {
+        if (courseIdToRemove === null) {
             savedCourses = [];
-            chrome.storage.sync.set({ 'savedCourses': [] }, () => {
-                console.log('所有課程已從暫存移除');
+            persistSavedCourses(() => {
                 updateSavedListButton();
                 const courseTable = document.getElementById('T1');
                 if (courseTable) {
@@ -60,16 +112,16 @@ function openSavedCoursesModal(buttonRect) {
             });
             return;
         }
+        // 以科號查找，而不是信任 modal 中寫死的索引
+        const indexToRemove = savedCourses.findIndex(c => c.id === courseIdToRemove);
+        if (indexToRemove === -1) return;
         const courseToRemove = savedCourses[indexToRemove];
-        if (!courseToRemove) return;
 
         // 從 JS 陣列中移除
         savedCourses.splice(indexToRemove, 1);
-        
+
         // 更新 storage
-        chrome.storage.sync.set({ 'savedCourses': savedCourses }, () => {
-            console.log('課程已從暫存移除');
-            
+        persistSavedCourses(() => {
             // 更新浮動按鈕
             updateSavedListButton();
             
@@ -109,14 +161,14 @@ function openSavedCoursesModal(buttonRect) {
         modalContent.addEventListener('click', (event) => {
             const target = event.target;
             const action = target.dataset.action;
-            const index = parseInt(target.dataset.index, 10);
-            const course = savedCourses[index];
+            const courseId = target.dataset.courseId;
+            const course = courseId ? savedCourses.find(c => c.id === courseId) : null;
 
             if (!action || !course) return;
 
             if (action === 'add' && course.addActionArgs) {
                 if (course.isGeInput) {
-                    const priorityInput = target.parentElement.querySelector(`.ge-priority-input[data-course-index="${index}"]`);
+                    const priorityInput = target.parentElement.querySelector(`.ge-priority-input[data-course-id="${courseId}"]`);
                     // 需要在執行前，將志願序的值設定到主頁面的 form 中
                     document.form1.aspr.value = priorityInput ? priorityInput.value : '';
                 }
@@ -139,8 +191,7 @@ function executeInPageContext(functionName, argsArray) {
 
 // 頁面載入後執行的主函式
 async function main() {
-    const data = await chrome.storage.sync.get('savedCourses');
-    savedCourses = data.savedCourses || [];
+    savedCourses = await loadSavedCourses();
     if (window.location.href.includes('JH713003.php') || window.location.href.includes('JH761003.php')) {
         chrome.storage.sync.get(['framesetRatio'], (result) => {
             if (result.framesetRatio) {
@@ -393,16 +444,15 @@ function setupEventListeners(courses, table, backToTopButton) {
         const savedIndex = savedCourses.findIndex(c => c.id === course.id);
 
         if (checkbox.checked && savedIndex === -1) {
-            // 新增到暫存
-            savedCourses.push(course);
+            // 新增到暫存（只存需要的欄位，course 帶有 element 等無法序列化的內容）
+            savedCourses.push(toSavedCourse(course));
         } else if (!checkbox.checked && savedIndex > -1) {
             // 從暫存移除
             savedCourses.splice(savedIndex, 1);
         }
-        
+
         // 將更新後的列表存回 storage
-        chrome.storage.sync.set({ 'savedCourses': savedCourses }, () => {
-            //console.log('暫存清單已更新', savedCourses);
+        persistSavedCourses(() => {
             updateSavedListButton(); // 更新浮動按鈕狀態
         });
     });
