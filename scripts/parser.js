@@ -155,40 +155,64 @@ const NthuCourseParser = {
         return courses;
     },
 
-    // 解析已選上的課程列表 (mainFrame)
-    parseEnrolledCourses(mainFrameDoc) {
+    // 把科號正規化成可比對的形式（兩張表的空白數量不一致，例如 "11510GE 168200"）
+    normalizeCourseId(id) {
+        return (id || '').replace(/\s+/g, '');
+    },
+
+    /**
+     * 解析已選上／已預排的課程列表 (mainFrame)
+     * @param {Document} mainFrameDoc - mainFrame 的 document
+     * @param {Set<string>} geCourseIds - 待選表中已知為通識課的科號（已正規化）。
+     *        預排系統 (JH761005) 的課名欄只有中文課名，不像加選系統 (JH713005)
+     *        會附上「核心通識」「GE course」類別標籤，光看文字永遠判不出是通識，
+     *        所以額外拿待選表的科號來比對。
+     */
+    parseEnrolledCourses(mainFrameDoc, geCourseIds) {
         const enrolledTable = mainFrameDoc.getElementById('T1');
         if (!enrolledTable) return [];
 
-        const headerCells = enrolledTable.querySelectorAll('thead tr td');
-        let noteIndex = -1;
-        headerCells.forEach((cell, index) => {
-            if (cell.innerText.includes('備註')) {
-                noteIndex = index;
-            }
+        // 動態定位欄位：預排系統只有 9 欄且沒有「備註」，加選系統有 11 欄，
+        // 寫死索引會在其中一邊抓錯欄位
+        const columnIndexes = {};
+        enrolledTable.querySelectorAll('thead tr td, thead tr th').forEach((cell, index) => {
+            const cellText = cell.innerText;
+            if (cellText.includes('科號')) columnIndexes.id = index;
+            else if (cellText.includes('科目名稱')) columnIndexes.name = index;
+            else if (cellText.includes('時間')) columnIndexes.time = index;
+            else if (cellText.includes('備註')) columnIndexes.note = index;
         });
 
-        // 如果找不到 "備註" 欄，就無法判斷 X-Class，給予警告但繼續執行
-        if (noteIndex === -1) {
-            console.warn('警告：在已選課程列表中找不到 "備註" 欄，X-Class 衝堂判斷可能不準確。');
+        // 找不到表頭時退回舊版的固定位置，至少不比原本差
+        if (columnIndexes.id === undefined) columnIndexes.id = 1;
+        if (columnIndexes.name === undefined) columnIndexes.name = 2;
+        if (columnIndexes.time === undefined) columnIndexes.time = 4;
+
+        // 沒有備註欄就無法判斷 X-Class。這個函數每次篩選都會跑，
+        // 警告只在第一次印，否則打字時會灌爆 console
+        if (columnIndexes.note === undefined && !this._warnedNoNoteColumn) {
+            this._warnedNoNoteColumn = true;
+            console.warn('在已選課程列表中找不到「備註」欄（預排系統本來就沒有），X-Class 衝堂判斷將不生效。');
         }
 
+        const minCells = Math.max(columnIndexes.id, columnIndexes.name, columnIndexes.time);
         const enrolledCourses = [];
         const rows = enrolledTable.querySelectorAll('tbody tr');
         rows.forEach(row => {
             // 檢查是否為有效的課程行
-            if (row.cells.length > 4 && row.cells[1].innerText.trim()) {
-                const courseId = row.cells[1].innerText.trim();
-                const timeString = row.cells[4].innerText.trim();
-                const courseTitleCellText = row.cells[2].innerText.trim();
-                const isGeCourse = courseTitleCellText.includes('GE course') || 
-                                   courseTitleCellText.includes('通識');
-                //const noteText = row.cells[10] ? row.cells[10].innerText.trim() : '';
-                //const isXClass = noteText.includes('X-Class');
+            if (row.cells.length > minCells && row.cells[columnIndexes.id].innerText.trim()) {
+                const courseId = row.cells[columnIndexes.id].innerText.trim();
+                const timeString = row.cells[columnIndexes.time].innerText.trim();
+                const courseTitleCellText = row.cells[columnIndexes.name].innerText.trim();
+
+                // 先看課名欄的類別標籤（加選系統有），沒有就拿待選表的科號比對（預排系統）
+                const isGeCourse = courseTitleCellText.includes('GE course') ||
+                                   courseTitleCellText.includes('通識') ||
+                                   (!!geCourseIds && geCourseIds.has(this.normalizeCourseId(courseId)));
+
                 let isXClass = false;
-                // 使用動態索引來取得備註欄位的資料
-                if (noteIndex !== -1 && row.cells[noteIndex]) {
-                    const noteText = row.cells[noteIndex].innerText;
+                if (columnIndexes.note !== undefined && row.cells[columnIndexes.note]) {
+                    const noteText = row.cells[columnIndexes.note].innerText;
                     isXClass = noteText.toUpperCase().includes('X-CLASS');
                 }
 
@@ -204,6 +228,102 @@ const NthuCourseParser = {
         });
         return enrolledCourses;
     },
+    /**
+     * 抓取「通識課程總表」，回傳所有通識課的科號集合。
+     *
+     * 為什麼需要這個：預排系統 (JH761005) 的已預排課表課名欄只有中文課名，
+     * 沒有「核心通識」「GE course」類別標籤，光看文字永遠判不出是不是通識課。
+     * 待選表雖然有標籤，但只有停在通識系所時才看得到通識課，切到別的系所就沒了。
+     * 所以另外抓一份完整的通識科號當基準，任何頁面都能正確判定。
+     *
+     * 不寫死 endpoint，直接沿用頁面上的系所表單來組請求，
+     * 加選系統 (JH713004) 與預排系統 (JH761004) 因此共用同一段程式碼，
+     * 隱藏欄位（含 ACIXSTORE）由 FormData 自動帶上。
+     *
+     * @param {HTMLSelectElement} deptSelect - 頁面上的 select[name="new_dept"]
+     * @returns {Promise<Set<string>|null>} 已正規化的科號集合；失敗時回傳 null
+     */
+    /**
+     * 送出鈕的 onclick 會先把 toChk 設成查詢模式、再改寫 action 才送出表單。
+     * 只帶 new_dept 而沒有 toChk，伺服器會原封不動回傳目前系所的清單。
+     * 這裡把那個值從 onclick 讀出來，加選與預排系統若有差異也不必改程式碼。
+     */
+    readDeptQueryFlag(form) {
+        for (const button of form.querySelectorAll('input[type="button"]')) {
+            const match = (button.getAttribute('onclick') || '').match(/toChk\.value\s*=\s*['"]([^'"]*)['"]/);
+            if (match) return match[1];
+        }
+        return '1'; // 後備值：實測預排系統 (JH761004) 是 '1'
+    },
+
+    async fetchGeCourseIds(deptSelect) {
+        const form = deptSelect && deptSelect.form;
+        if (!form) {
+            console.warn('找不到系所查詢表單，略過通識科號總表。');
+            return null;
+        }
+
+        try {
+            // 系所代碼要用選項的原始值：它帶尾隨空白（例如 "GE  "），trim 掉伺服器不認
+            const geOption = [...deptSelect.options].find(option => option.value.trim() === 'GE');
+            if (!geOption) {
+                throw new Error('系所選單中找不到通識 (GE) 選項');
+            }
+
+            const formData = new FormData(form);
+            // 篩選面板是插在頁面表單內部的，我們自己的欄位不該一起送出去
+            for (const key of [...formData.keys()]) {
+                if (key.startsWith('nthu-helper')) formData.delete(key);
+            }
+            formData.set('new_dept', geOption.value);
+            formData.set('toChk', this.readDeptQueryFlag(form));
+
+            // form.action 目前帶著 toChk 的 query string，而 query 會蓋過 body，
+            // 導致回傳的還是原本那個系所，所以要去掉 query 只留路徑
+            const url = form.action.split('?')[0];
+
+            const response = await fetch(url, { method: 'POST', body: formData });
+            if (!response.ok) {
+                throw new Error(`伺服器錯誤: ${response.status}`);
+            }
+
+            const html = new TextDecoder('big5').decode(await response.arrayBuffer());
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const table = doc.getElementById('T1');
+            if (!table) {
+                throw new Error('回應中找不到課程表格 T1');
+            }
+
+            const columnIndexes = {};
+            table.querySelectorAll('thead tr td, thead tr th').forEach((cell, index) => {
+                const cellText = cell.textContent;
+                if (cellText.includes('科號')) columnIndexes.id = index;
+                else if (cellText.includes('科目名稱')) columnIndexes.name = index;
+            });
+            if (columnIndexes.id === undefined || columnIndexes.name === undefined) {
+                throw new Error('回應中找不到「科號」或「科目名稱」欄位');
+            }
+
+            const minCells = Math.max(columnIndexes.id, columnIndexes.name);
+            const geCourseIds = new Set();
+            table.querySelectorAll('tbody tr').forEach(row => {
+                if (row.cells.length <= minCells) return;
+                const title = row.cells[columnIndexes.name].textContent;
+                if (title.includes('通識') || title.includes('GE course')) {
+                    const id = this.normalizeCourseId(row.cells[columnIndexes.id].textContent);
+                    if (id) geCourseIds.add(id);
+                }
+            });
+
+            console.log(`通識科號總表：取得 ${geCourseIds.size} 門課。`);
+            return geCourseIds;
+
+        } catch (error) {
+            console.error('抓取通識科號總表失敗：', error);
+            return null;
+        }
+    },
+
     /**
      * 透過 POST 請求獲取指定系所的即時選課人數，並解析回傳的 HTML。
      * @param {string} departmentId - 系所代碼 (例如 'CS', 'EE', 'GEC')

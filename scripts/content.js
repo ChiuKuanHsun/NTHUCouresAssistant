@@ -96,6 +96,74 @@ function updateSavedListButton() {
     }
 }
 
+// 通識科號總表的快取。整包只有兩百多個科號（約 3KB），存 local 綽綽有餘；
+// 帶學期當版本，換學期自動失效，不必手動清。
+const GE_COURSE_IDS_KEY = 'geCourseIds';
+// 加退選期間通識課會增刪，光靠學期比對整學期都不會更新，所以再加一層時效
+const GE_COURSE_IDS_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 把「所有通識課的科號」補進 geCourseIds。
+ * 先用快取，過期或換學期才連線重抓，抓到就寫回快取。
+ * 有補到東西才呼叫 onUpdated（重跑篩選、重畫時間格顏色）。
+ *
+ * @param {Set<string>} geCourseIds - 就地補齊的集合（runFilter 透過閉包共用同一份）
+ * @param {string} term - 學期代碼，取自科號前 5 碼，例如 '11510'。
+ *        這個系所一門課都沒有時會是空字串，此時沿用快取裡的學期，不強制重抓。
+ * @param {Function} onUpdated - 集合有變動時的回呼
+ */
+async function primeGeCourseIds(geCourseIds, term, onUpdated) {
+    const sizeBefore = geCourseIds.size;
+    const absorb = (ids) => ids.forEach(id => geCourseIds.add(id));
+    const finish = () => {
+        if (geCourseIds.size !== sizeBefore) onUpdated();
+    };
+
+    let cached = null;
+    try {
+        cached = (await chrome.storage.local.get(GE_COURSE_IDS_KEY))[GE_COURSE_IDS_KEY];
+    } catch (error) {
+        console.error('讀取通識科號快取失敗：', error);
+    }
+
+    const hasCache = !!(cached && Array.isArray(cached.ids) && cached.ids.length > 0);
+    // term 為空（頁面上沒有任何課）時無從比對，就當作同一學期沿用快取
+    const isSameTerm = hasCache && (!term || cached.term === term);
+    const isFresh = hasCache && (Date.now() - (cached.fetchedAt || 0) < GE_COURSE_IDS_TTL_MS);
+
+    // 先把同學期的快取吃進來（即使已過期），畫面才不會有幾秒鐘顏色是錯的
+    if (hasCache && isSameTerm) {
+        absorb(cached.ids);
+    }
+
+    if (hasCache && isSameTerm && isFresh) {
+        finish();
+        return;
+    }
+
+    const deptSelect = document.querySelector('select[name="new_dept"]');
+    const fetched = await NthuCourseParser.fetchGeCourseIds(deptSelect);
+    if (!fetched || fetched.size === 0) {
+        // 抓取失敗就沿用上面已吃進來的舊資料，不覆寫快取，下次進頁面再試
+        finish();
+        return;
+    }
+
+    absorb(fetched);
+    try {
+        await chrome.storage.local.set({
+            [GE_COURSE_IDS_KEY]: {
+                term: term || (cached && cached.term) || '',
+                ids: [...fetched],
+                fetchedAt: Date.now()
+            }
+        });
+    } catch (error) {
+        console.error('寫入通識科號快取失敗：', error);
+    }
+    finish();
+}
+
 function openSavedCoursesModal(buttonRect) {
    const handleRemoveCourse = (courseIdToRemove) => {
         // 移除所有課程
@@ -341,12 +409,21 @@ function setupEventListeners(courses, table, backToTopButton, prefs) {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', refreshLiveCounts);
     }
+    // 所有通識課的科號。預排系統的已預排課表沒有類別標籤，只能靠科號比對。
+    // 先用當前待選表能看到的（停在通識系所時就已經完整），稍後再由
+    // primeGeCourseIds() 補上完整總表，讓其他系所的頁面也判得出來。
+    const geCourseIds = new Set(
+        courses
+            .filter(course => course && course.isGe)
+            .map(course => NthuCourseParser.normalizeCourseId(course.id))
+    );
+
     // 統一的篩選觸發函數
     const runFilter = () => {
         const mainFrame = window.parent.frames['mainFrame'];
         let enrolledSchedule = [];
         if (mainFrame && mainFrame.document) {
-            enrolledSchedule = NthuCourseParser.parseEnrolledCourses(mainFrame.document);
+            enrolledSchedule = NthuCourseParser.parseEnrolledCourses(mainFrame.document, geCourseIds);
         } else {
             console.error("找不到 mainFrame，無法讀取已選課程進行衝堂判斷。");
         }
@@ -356,7 +433,8 @@ function setupEventListeners(courses, table, backToTopButton, prefs) {
     // --- 主要篩選器的事件 --- 
     saveBtn.addEventListener('click', () => {
         const mainFrame = window.parent.frames['mainFrame'];
-        const enrolledCourses = NthuCourseParser.parseEnrolledCourses(mainFrame.document);
+        // 帶上通識科號，存進去的 isGe 才是對的 —— popup 的課表配色靠這個欄位
+        const enrolledCourses = NthuCourseParser.parseEnrolledCourses(mainFrame.document, geCourseIds);
         chrome.storage.sync.set({ 'savedSchedule': enrolledCourses }, () => {
             alert('課表已成功儲存！');
             saveBtn.textContent = '課表已儲存';
@@ -442,7 +520,7 @@ function setupEventListeners(courses, table, backToTopButton, prefs) {
             if (!isCollapsed) {
                 const mainFrame = window.parent.frames['mainFrame'];
                 if (mainFrame && mainFrame.document) {
-                    const enrolledSchedule = NthuCourseParser.parseEnrolledCourses(mainFrame.document);
+                    const enrolledSchedule = NthuCourseParser.parseEnrolledCourses(mainFrame.document, geCourseIds);
                     NthuCourseHelperUI.updateTimeGridHighlights(enrolledSchedule);
                 }
             }
@@ -483,6 +561,26 @@ function setupEventListeners(courses, table, backToTopButton, prefs) {
             refreshLiveCounts();
         }
     }
+
+    // --- 補齊通識科號總表 ---
+    // 不 await：那個查詢回應接近 1MB，不能擋住面板顯示。抓回來之後再重跑一次
+    // 篩選、重畫時間格顏色即可。
+    // 學期代碼取自科號前 5 碼（例如 11510）。這個系所一門課都沒有時取不到，
+    // 但仍要往下走 —— 快取本身還是能用，不該整個跳過。
+    const sampleCourse = courses.find(course => course && course.id);
+    const term = sampleCourse ? NthuCourseParser.normalizeCourseId(sampleCourse.id).slice(0, 5) : '';
+    primeGeCourseIds(geCourseIds, term, () => {
+        runFilter();
+        // 時間格收合時不必重畫，展開時本來就會重新計算一次
+        if (timeGridContainer && !timeGridContainer.classList.contains('collapsed')) {
+            const mainFrame = window.parent.frames['mainFrame'];
+            if (mainFrame && mainFrame.document) {
+                NthuCourseHelperUI.updateTimeGridHighlights(
+                    NthuCourseParser.parseEnrolledCourses(mainFrame.document, geCourseIds)
+                );
+            }
+        }
+    });
 
     // --- 課程列表的事件 ---
     table.addEventListener('click', (event) => {
