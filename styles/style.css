@@ -475,7 +475,8 @@ input:checked + .slider:before {
 
 
 /* --- 查詢按鈕 --- */
-.nthu-helper-search-btn {
+.nthu-helper-search-btn,
+.nthu-helper-grade-btn {
   position: absolute;
   top: 2px;
   right: 2px;
@@ -490,8 +491,14 @@ input:checked + .slider:before {
   text-align: center;
   opacity: 0.5;
   transition: opacity 0.2s;
+  padding: 0;
 }
-td:hover .nthu-helper-search-btn {
+/* 成績按鈕排在查詢按鈕左邊 */
+.nthu-helper-grade-btn {
+  right: 24px;
+}
+td:hover .nthu-helper-search-btn,
+td:hover .nthu-helper-grade-btn {
   opacity: 1;
 }
 
@@ -643,7 +650,8 @@ td:hover .nthu-helper-search-btn {
 #nthu-helper-open-prefs-btn,
 #nthu-helper-open-temp-list-btn,
 #nthu-helper-save-schedule-btn,
-#nthu-helper-refresh-counts-btn {
+#nthu-helper-refresh-counts-btn,
+.grade-stats-controls .grade-stats-search {
     padding: 5px 10px;
     border: 1px solid #658487;
     border-radius: 4px;
@@ -656,7 +664,8 @@ td:hover .nthu-helper-search-btn {
 #nthu-helper-open-prefs-btn:disabled,
 #nthu-helper-open-temp-list-btn:disabled,
 #nthu-helper-save-schedule-btn:disabled,
-#nthu-helper-refresh-counts-btn:disabled {
+#nthu-helper-refresh-counts-btn:disabled,
+.grade-stats-controls .grade-stats-search:disabled {
     cursor: not-allowed;
     background-color: #e9ecef;
     color: #6c757d;
@@ -984,6 +993,116 @@ td:hover .nthu-helper-search-btn {
 .saved-courses-table td:nth-child(7) { width: 8%;  }
 .saved-courses-table th:nth-child(8),
 .saved-courses-table td:nth-child(8) { width: 10%; text-align: center; }
+/* --- 歷年成績分佈 Modal 樣式 --- */
+#nthu-helper-modal-content.grade-stats-modal {
+    width: 92%;
+    max-width: 1100px;
+    height: auto;
+    max-height: 85vh;
+}
+.grade-stats-modal .modal-header {
+    gap: 10px;
+}
+.grade-stats-modal .grade-stats-subtitle {
+    color: #555;
+    font-size: small;
+    margin-right: auto;
+}
+.grade-stats-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+}
+.grade-stats-controls label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: small;
+    white-space: nowrap;
+}
+/* 下拉選單沿用系所總表那顆自訂選單的外觀，整個擴充功能的控制項才是同一套 */
+.grade-stats-controls select {
+    font-size: 13px;
+    padding: 4px 10px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.grade-stats-controls select:hover {
+    border-color: #888;
+}
+.grade-stats-controls .grade-stats-keyword {
+    flex: 1 1 180px;
+    min-width: 120px;
+    /* 跟篩選面板的文字輸入框同一套 */
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+/* 查詢按鈕的外觀跟標題列那幾顆（偏好設定／暫存清單…）共用，
+   規則寫在上面 #nthu-helper-open-prefs-btn 那一組裡 */
+.grade-stats-message {
+    padding: 30px 0;
+    text-align: center;
+    color: #666;
+}
+.grade-stats-message.error {
+    color: #c00;
+}
+.grade-stats-hint {
+    margin-bottom: 8px;
+    font-size: small;
+    color: #666;
+}
+.grade-stats-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+/* 欄寬由 <colgroup> 決定，沒指定寬度的課名欄吃掉剩下的空間 */
+.grade-stats-table.fixed-columns {
+    table-layout: fixed;
+}
+.grade-stats-table col.col-id      { width: 15%; }
+.grade-stats-table col.col-teacher { width: 14%; }
+.grade-stats-table col.col-count   { width: 7%;  }
+.grade-stats-table col.col-score   { width: 10%;  }
+/* 數字本身很短，欄位窄一點、置中不換行；表頭字較長就讓它折行 */
+.grade-stats-table td.col-count,
+.grade-stats-table td.col-score {
+    text-align: center;
+    white-space: nowrap;
+}
+.grade-stats-table th.col-count,
+.grade-stats-table th.col-score {
+    text-align: center;
+    font-size: 0.9em;
+    padding-left: 2px;
+    padding-right: 2px;
+}
+.grade-stats-table th,
+.grade-stats-table td {
+    border: 1px solid #ddd;
+    padding: 6px 8px;
+    text-align: left;
+    word-break: break-word;
+}
+.grade-stats-table th {
+    background-color: #f2f2f2;
+    position: sticky;
+    top: 0;   /* modal-body 才是捲動容器，表頭在它上緣黏住 */
+    z-index: 1;
+}
+/* 使用者點進來的那一門課（同名課程可能有多位老師開） */
+.grade-stats-table tr.grade-stats-match td {
+    background-color: #fff3bf;
+    font-weight: bold;
+}
+
 /* --- 偏好設定 Modal 樣式 --- */
 #nthu-helper-modal-content.preferences-modal {
     width: 92%;

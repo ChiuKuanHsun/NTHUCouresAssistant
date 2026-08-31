@@ -253,6 +253,62 @@ function openSavedCoursesModal(buttonRect) {
         });
     }
 }
+/**
+ * 開啟「歷年成績分佈」視窗並查詢。
+ * 預設查的是前一學年的同一個學期（成績要等學期結束才匯入，當學年查不到），
+ * 條件用課程名稱，這樣同名課程的每一位老師都會列出來，再把使用者點的那一筆高亮。
+ */
+let gradeStatsSession = 0;
+
+function openGradeStatsModal(course, originRect) {
+    // 使用者可能在查詢還沒回來前就關掉視窗、改點別堂課，
+    // 舊的查詢回來時不該把結果畫進新開的視窗裡
+    const session = ++gradeStatsSession;
+    const terms = NthuGradeStats.termOptions(course.id);
+    const state = {
+        course,
+        terms,
+        term: NthuGradeStats.defaultTerm(course.id) || terms[0].value,
+        mode: 'course',
+        keyword: NthuGradeStats.searchableCourseName(course.name),
+        loading: true,
+        error: null,
+        result: null,
+        matched: new Set()
+    };
+
+    const runQuery = async () => {
+        if (session !== gradeStatsSession) return;
+        state.loading = true;
+        state.error = null;
+        state.result = null;
+        state.matched = new Set();
+        NthuCourseModal.renderGradeStatsBody(state);
+
+        try {
+            const result = await NthuGradeStats.query({
+                keyword: state.keyword,
+                mode: state.mode,
+                term: state.term
+            });
+            state.result = result;
+            state.matched = NthuGradeStats.findMatchingRows(result, course);
+        } catch (error) {
+            state.error = error.message || String(error);
+        } finally {
+            state.loading = false;
+            if (session === gradeStatsSession) NthuCourseModal.renderGradeStatsBody(state);
+        }
+    };
+
+    NthuCourseModal.showGradeStatsModal(state, (patch) => {
+        Object.assign(state, patch);
+        runQuery();
+    }, originRect);
+
+    runQuery();
+}
+
 function executeInPageContext(functionName, argsArray) {
     window.postMessage({
         type: "EXECUTE_ACTION",
@@ -592,6 +648,17 @@ function setupEventListeners(courses, table, backToTopButton, prefs) {
         
         if(course) {
             NthuCourseHelperUI.showSearchMenu(event.clientX, event.clientY, course);
+        }
+    });
+
+    // --- 歷年成績分佈按鈕的事件 ---
+    table.addEventListener('click', (event) => {
+        const target = event.target.closest('.nthu-helper-grade-btn');
+        if (!target) return;
+
+        const course = courses[parseInt(target.dataset.index, 10)];
+        if (course) {
+            openGradeStatsModal(course, target.getBoundingClientRect());
         }
     });
 

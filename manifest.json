@@ -32,6 +32,7 @@
         "scripts/prefs.js",
         "scripts/modal.js",
         "scripts/parser.js",
+        "scripts/gradeStats.js",
         "scripts/filter.js",
         "scripts/ui.js",
         "scripts/content.js",

@@ -144,8 +144,8 @@ const NthuCourseHelperUI = {
             const nameCell = row.cells[2];
             if (nameCell) {
                 nameCell.style.position = 'relative';
-                const searchBtn = this.createSearchButton(index);
-                nameCell.appendChild(searchBtn);
+                nameCell.appendChild(this.createSearchButton(index));
+                nameCell.appendChild(this.createGradeStatsButton(index));
             }
         });
     },
@@ -169,7 +169,18 @@ const NthuCourseHelperUI = {
         button.dataset.index = index;
         return button;
     },
-    
+
+    // 建立「歷年成績分佈」查詢按鈕
+    createGradeStatsButton(index) {
+        const button = document.createElement('button');
+        button.className = 'nthu-helper-grade-btn';
+        button.type = 'button'; // 避免觸發 form submit
+        button.innerHTML = '📊';
+        button.title = '查詢歷年成績分佈（等級制平均值／標準差）';
+        button.dataset.index = index;
+        return button;
+    },
+
     // 顯示查詢選項菜單
     showSearchMenu(x, y, course) {
         const existingMenu = document.getElementById('nthu-helper-search-menu');
