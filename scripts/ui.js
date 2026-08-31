@@ -66,7 +66,7 @@ const NthuCourseHelperUI = {
                                 <span class="legend-color-box enrolled-slot-ge"></span> 已選通識
                             </div>
                         </div>
-                        <div class="time-grid-hint">提示：按住並拖曳，滑鼠劃過的時段都會一併勾選（起點格未選取為勾選，已選取則為取消）</div>
+                        <div class="time-grid-hint">提示：按住並拖曳，滑鼠劃過的時段都會一併勾選 </br>（起點格未選取為勾選，已選取則為取消）</div>
                     </div>
                     ${isGePage ? `
                     <div class="ge-category-filter-container">
