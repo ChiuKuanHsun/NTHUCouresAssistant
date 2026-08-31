@@ -29,6 +29,7 @@
         "https://nthucourseselectiontemplate.pages.dev/*"
       ],
       "js": [
+        "scripts/prefs.js",
         "scripts/modal.js",
         "scripts/parser.js",
         "scripts/filter.js",

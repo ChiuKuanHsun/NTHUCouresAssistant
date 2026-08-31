@@ -137,5 +137,95 @@ const NthuCourseModal = {
             if (event.target === modalOverlay) this.close();
         });
         
+    },
+
+    /**
+     * 顯示「偏好設定」互動視窗
+     * @param {Object} prefs - 目前的設定值（NthuCoursePrefs.load() 的結果）
+     * @param {Function} onChangeCallback - 設定變動時的回呼，參數為 (key, value, committed)。
+     *        committed 為 false 代表這是拖曳滑桿過程中的即時預覽，不應寫入儲存；
+     *        true 代表使用者已經定案（勾選框切換、滑桿放開）。
+     * @param {DOMRect} originRect - 觸發按鈕的位置，用於展開動畫的原點
+     */
+    showPreferencesModal(prefs, onChangeCallback, originRect) {
+        this.close(true);
+
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'nthu-helper-modal-overlay';
+        const modalContent = document.createElement('div');
+        modalContent.id = 'nthu-helper-modal-content';
+        modalContent.classList.add('preferences-modal');
+        if (originRect) {
+            const originX = originRect.left + originRect.width / 2;
+            const originY = originRect.top + originRect.height / 2;
+            modalContent.style.transformOrigin = `${originX}px ${originY}px`;
+        }
+        modalOverlay.classList.add('opening');
+
+        const rows = NthuCoursePrefs.ITEMS.map(item => {
+            const text = `
+                <div class="preference-text">
+                    <div class="preference-label">${item.label}</div>
+                    <div class="preference-hint">${item.hint}</div>
+                </div>`;
+
+            // 滑桿型項目占一整列，滑桿在說明文字下方另起一行
+            if (item.type === 'range') {
+                return `
+                    <div class="preference-item preference-item-column">
+                        ${text}
+                        <div class="preference-range">
+                            <span>${item.minLabel}</span>
+                            <input type="range" data-pref-key="${item.key}"
+                                   min="${item.min}" max="${item.max}" step="${item.step}"
+                                   value="${prefs[item.key]}">
+                            <span>${item.maxLabel}</span>
+                        </div>
+                    </div>`;
+            }
+
+            return `
+                <div class="preference-item">
+                    ${text}
+                    <label class="switch">
+                        <input type="checkbox" data-pref-key="${item.key}" ${prefs[item.key] ? 'checked' : ''}>
+                        <span class="slider round"></span>
+                    </label>
+                </div>`;
+        }).join('');
+
+        modalContent.innerHTML = `
+            <div class="modal-header">
+                <h2>偏好設定</h2>
+                <div class="preferences-note">※ 設定的是「預設值」，下次開啟選課頁時套用；不會改變你目前頁面上的篩選狀態。</div>
+                <button id="nthu-helper-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="preferences-list">${rows}</div>
+            </div>
+        `;
+        modalOverlay.appendChild(modalContent);
+        document.body.appendChild(modalOverlay);
+
+        const list = modalContent.querySelector('.preferences-list');
+        const readValue = (input) => (input.type === 'checkbox' ? input.checked : Number(input.value));
+
+        // input：滑桿拖曳中的即時預覽（不寫入儲存）
+        list.addEventListener('input', (event) => {
+            const input = event.target;
+            if (input.type !== 'range' || !input.dataset.prefKey) return;
+            onChangeCallback(input.dataset.prefKey, readValue(input), false);
+        });
+        // change：勾選框切換、或滑桿放開後才真正儲存
+        list.addEventListener('change', (event) => {
+            const input = event.target;
+            if (input.tagName !== 'INPUT' || !input.dataset.prefKey) return;
+            onChangeCallback(input.dataset.prefKey, readValue(input), true);
+        });
+
+        document.getElementById('nthu-helper-modal-close').addEventListener('click', () => this.close());
+        modalOverlay.addEventListener('click', (event) => {
+            if (event.target === modalOverlay) this.close();
+        });
     }
 };

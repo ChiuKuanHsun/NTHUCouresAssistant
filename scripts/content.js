@@ -9,14 +9,20 @@ function applyFramesetRatio(ratio) {
     }
 }
 
-// 【新增】監聽來自 popup 的訊息
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "updateFramesetRatio") {
-        applyFramesetRatio(request.ratio);
-        sendResponse({ status: "success" }); // 回覆 popup，表示已處理
+/**
+ * 從子 frame（偏好設定視窗所在的課程表格 frame）直接調最外層 frameset 的比例。
+ * 各 frame 同源，可以直接存取 window.top.document（這份程式碼讀 mainFrame 也是同樣做法）。
+ */
+function applyFramesetRatioToTop(ratio) {
+    try {
+        const frameset = window.top.document.querySelector('frameset');
+        if (frameset) {
+            frameset.rows = `${ratio},*`;
+        }
+    } catch (error) {
+        console.error('套用框架比例失敗：', error);
     }
-    return true; // 保持 message channel 開啟以異步回覆
-});
+}
 let savedCourses = [];
 
 // 暫存清單改存在 storage.local。
@@ -192,12 +198,11 @@ function executeInPageContext(functionName, argsArray) {
 // 頁面載入後執行的主函式
 async function main() {
     savedCourses = await loadSavedCourses();
+    const prefs = await NthuCoursePrefs.load();
     if (window.location.href.includes('JH713003.php') || window.location.href.includes('JH761003.php')) {
-        chrome.storage.sync.get(['framesetRatio'], (result) => {
-            if (result.framesetRatio) {
-                applyFramesetRatio(result.framesetRatio);
-            }
-        });
+        if (prefs.framesetRatio) {
+            applyFramesetRatio(prefs.framesetRatio);
+        }
     }
     // 檢查這是否是「加選」的那個表格
     const deptSelect = document.querySelector('select[name="new_dept"]');
@@ -246,8 +251,8 @@ async function main() {
     const savedListButton = NthuCourseHelperUI.createSavedListButton();
     document.body.appendChild(savedListButton);
     updateSavedListButton();
-    // 5. 設定事件監聽器
-    setupEventListeners(courses, courseTable, backToTopButton);
+    // 5. 設定事件監聽器（並套用偏好設定的預設值）
+    setupEventListeners(courses, courseTable, backToTopButton, prefs);
     
     
     /*
@@ -271,7 +276,7 @@ async function main() {
 }
 
 // 設定所有事件監聽
-function setupEventListeners(courses, table, backToTopButton) {
+function setupEventListeners(courses, table, backToTopButton, prefs) {
     const nameFilter = document.getElementById('nthu-helper-filter-name');
     const teacherFilter = document.getElementById('nthu-helper-filter-teacher');
     const courseNoFilter = document.getElementById('nthu-helper-filter-courseNo');
@@ -287,20 +292,25 @@ function setupEventListeners(courses, table, backToTopButton) {
     const refreshBtn = document.getElementById('nthu-helper-refresh-counts-btn');
     const saveBtn = document.getElementById('nthu-helper-save-schedule-btn');
     const openTempListBtn = document.getElementById('nthu-helper-open-temp-list-btn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', async () => {
+    const openPrefsBtn = document.getElementById('nthu-helper-open-prefs-btn');
+
+    // 抽成具名函數，讓「預設自動更新即時人數」能直接重用同一段流程
+    const refreshLiveCounts = async () => {
+        if (refreshBtn) {
             refreshBtn.textContent = '更新中...';
             refreshBtn.disabled = true;
+        }
 
-            // 顯示所有課程的 loading spinner
-            document.querySelectorAll('.live-count-cell').forEach(cell => {
-                cell.innerHTML = `<div class="spinner"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>`;
-            });
+        // 顯示所有課程的 loading spinner
+        document.querySelectorAll('.live-count-cell').forEach(cell => {
+            cell.innerHTML = `<div class="spinner"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>`;
+        });
 
-            // 取得目前頁面的系所代碼
-            const deptSelect = document.querySelector('select[name="new_dept"]');
-            const departmentId = deptSelect.value.trim();
+        // 取得目前頁面的系所代碼
+        const deptSelect = document.querySelector('select[name="new_dept"]');
+        const departmentId = deptSelect.value.trim();
 
+        try {
             const countsMap = await NthuCourseParser.fetchAndParseCounts(departmentId);
 
             // 更新頁面上的數字
@@ -310,17 +320,26 @@ function setupEventListeners(courses, table, backToTopButton) {
                     cell.innerHTML = `${data.enrolled} / ${data.waiting}`;
                 }
             });
+        } catch (error) {
+            // 自動觸發時沒人盯著畫面，失敗不能把 spinner 留在原地轉不停
+            console.error('更新即時人數失敗：', error);
+        }
 
-            // 將沒有抓到資料的欄位恢復預設
-            document.querySelectorAll('.live-count-cell').forEach(cell => {
-                if (cell.innerHTML.includes('spinner')) {
-                    cell.innerHTML = 'N/A';
-                }
-            });
+        // 將沒有抓到資料的欄位恢復預設
+        document.querySelectorAll('.live-count-cell').forEach(cell => {
+            if (cell.innerHTML.includes('spinner')) {
+                cell.innerHTML = 'N/A';
+            }
+        });
 
+        if (refreshBtn) {
             refreshBtn.textContent = '更新即時人數';
             refreshBtn.disabled = false;
-        });
+        }
+    };
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshLiveCounts);
     }
     // 統一的篩選觸發函數
     const runFilter = () => {
@@ -347,6 +366,24 @@ function setupEventListeners(courses, table, backToTopButton) {
     openTempListBtn.addEventListener('click', () => {
         openSavedCoursesModal();
     });
+    if (openPrefsBtn) {
+        openPrefsBtn.addEventListener('click', async () => {
+            const currentPrefs = await NthuCoursePrefs.load();
+            NthuCourseModal.showPreferencesModal(
+                currentPrefs,
+                (key, value, committed) => {
+                    // 框架比例是唯一會即時生效的項目，拖曳過程中就跟著動
+                    if (key === 'framesetRatio') {
+                        applyFramesetRatioToTop(value);
+                    }
+                    if (committed) {
+                        NthuCoursePrefs.set(key, value);
+                    }
+                },
+                openPrefsBtn.getBoundingClientRect()
+            );
+        });
+    }
     toggleBtn.addEventListener('click', (event) => {
         event.preventDefault();
         container.classList.toggle('collapsed');
@@ -373,6 +410,17 @@ function setupEventListeners(courses, table, backToTopButton) {
         timeFilterModeOptions.addEventListener('change', runFilter);
     }
     
+    // --- 校區篩選器的事件 ---
+    const campusOptions = document.querySelector('.campus-options');
+
+    if (campusOptions) {
+        campusOptions.addEventListener('change', (event) => {
+            if (event.target.tagName === 'INPUT' && event.target.type === 'checkbox') {
+                runFilter();
+            }
+        });
+    }
+
     // --- 通識類別篩選器的事件 ---
     const geCategoryOptions = document.querySelector('.ge-category-options');
 
@@ -401,6 +449,40 @@ function setupEventListeners(courses, table, backToTopButton) {
         });
     }
     setupTimeGridDragSelection(timeGrid, runFilter);
+
+    // --- 套用偏好設定的預設值 ---
+    // 放在所有監聽器綁定完之後，並且直接改狀態、手動跑一次 runFilter，
+    // 而不是靠 dispatchEvent 觸發，避免四個預設值各自觸發一次重跑整張表。
+    if (prefs) {
+        let needsInitialFilter = false;
+
+        if (prefs.defaultHideClash && hideClashCheckbox) {
+            hideClashCheckbox.checked = true;
+            needsInitialFilter = true;
+        }
+        // 這項只在通識頁有勾選框，且要搭配「隱藏衝堂」才會改變篩選結果，
+        // 所以不用它自己去觸發一次 runFilter
+        if (prefs.defaultAllowGeClash && allowGeClashCheckbox) {
+            allowGeClashCheckbox.checked = true;
+        }
+        if (prefs.defaultAllowXClassClash && allowXClassClashCheckbox) {
+            allowXClassClashCheckbox.checked = true;
+            needsInitialFilter = true;
+        }
+        if (prefs.defaultExcludeNanda) {
+            const nandaCheckbox = document.querySelector('.campus-options input[value="nanda"]');
+            if (nandaCheckbox) {
+                nandaCheckbox.checked = false;
+                needsInitialFilter = true;
+            }
+        }
+        if (needsInitialFilter) {
+            runFilter();
+        }
+        if (prefs.defaultAutoRefreshCounts) {
+            refreshLiveCounts();
+        }
+    }
 
     // --- 課程列表的事件 ---
     table.addEventListener('click', (event) => {

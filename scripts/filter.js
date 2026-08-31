@@ -112,6 +112,11 @@ const NthuCourseFilter = {
         }
     },
 
+    // 讀取目前勾選的校區（'main' / 'nanda'），預設兩者都勾選
+    getSelectedCampuses() {
+        return Array.from(document.querySelectorAll('.campus-options input:checked')).map(cb => cb.value);
+    },
+
     // 主篩選函數
     filterAll(table, courses, enrolledCourses) {
         const nameQuery = document.getElementById('nthu-helper-filter-name').value.toLowerCase();
@@ -131,6 +136,10 @@ const NthuCourseFilter = {
         
         // Get selected categories
         const selectedCategories = Array.from(document.querySelectorAll('.ge-category-options input:checked')).map(cb => cb.value);
+
+        // 校區篩選：兩個選項預設都勾選，兩個都取消則不顯示任何課程
+        const campusFilterExists = !!document.querySelector('.campus-options input');
+        const selectedCampuses = this.getSelectedCampuses();
 
         courses.forEach((course) => {
             const row = course.element;
@@ -156,7 +165,11 @@ const NthuCourseFilter = {
                 }
             }
 
-            if (nameMatch && teacherMatch && courseNoMatch && timeSelectMatch && clashMatch && categoryMatch) {
+            // Campus Check
+            const campusMatch = !campusFilterExists ||
+                selectedCampuses.includes(course.campus || NthuCourseParser.parseCampus(course.room || ''));
+
+            if (nameMatch && teacherMatch && courseNoMatch && timeSelectMatch && clashMatch && categoryMatch && campusMatch) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';

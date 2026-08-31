@@ -21,6 +21,14 @@
     margin: 0;
 }
 
+/* 右側按鈕組：按鈕變多了，窄寬度時讓它換行而不是擐破版面 */
+.nthu-helper-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
 #nthu-helper-toggle-btn {
     padding: 3px 10px;
     border: 1px solid #ccc;
@@ -47,6 +55,7 @@
   display: flex;
   gap: 15px;
   align-items: center;
+  flex-wrap: wrap;
   margin-bottom: 15px;
 }
 .filters input[type="text"] {
@@ -94,6 +103,56 @@
 }
 .time-grid-container.collapsed .time-grid-hint {
     display: none;
+}
+
+/* --- 校區篩選：與「一般／嚴格／反向」同一套分段按鈕樣式 --- */
+.campus-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+.campus-options {
+    display: inline-flex;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.campus-options label {
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}
+.campus-options label + label span {
+    border-left: 1px solid #ccc;
+}
+/* 隱藏原生 checkbox，只留下被 label 包住的文字當按鈕 */
+.campus-options input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.campus-options span {
+    display: block;
+    padding: 3px 10px;
+    font-size: 13px;
+    color: #333;
+    background-color: #f0f0f0;
+    transition: background-color 0.2s, color 0.2s;
+}
+.campus-options span:hover {
+    background-color: #e0e0e0;
+}
+.campus-options input[type="checkbox"]:checked + span {
+    background-color: #3d32a0;
+    color: #fff;
+}
+.campus-options input[type="checkbox"]:checked + span:hover {
+    background-color: #332a8a;
+}
+.campus-options input[type="checkbox"]:focus-visible + span {
+    box-shadow: inset 0 0 0 2px #3d32a0;
 }
 
 /* --- 通識類別篩選 --- */
@@ -578,6 +637,12 @@ td:hover .nthu-helper-search-btn {
     align-items: center;
 }
 
+/* 標題列右側的四顆按鈕共用同一組樣式（原本是每個 ID 各寫一份完全相同的規則）。
+   間距交給 .nthu-helper-header-actions 的 gap 處理，不再用 margin-left: auto，
+   否則在 flex 容器裡每顆都吃到 auto 會把按鈕彼此推開。 */
+#nthu-helper-open-prefs-btn,
+#nthu-helper-open-temp-list-btn,
+#nthu-helper-save-schedule-btn,
 #nthu-helper-refresh-counts-btn {
     padding: 5px 10px;
     border: 1px solid #658487;
@@ -586,42 +651,15 @@ td:hover .nthu-helper-search-btn {
     color: #3d32a0;
     cursor: pointer;
     font-weight: bold;
-    margin-left: auto;
-    margin-right: 10px;
 }
 
+#nthu-helper-open-prefs-btn:disabled,
+#nthu-helper-open-temp-list-btn:disabled,
+#nthu-helper-save-schedule-btn:disabled,
 #nthu-helper-refresh-counts-btn:disabled {
     cursor: not-allowed;
     background-color: #e9ecef;
     color: #6c757d;
-}
-
-#nthu-helper-save-schedule-btn {
-    padding: 5px 10px;
-    border: 1px solid #658487;
-    border-radius: 4px;
-    background-color: #e8f0fe;
-    color: #3d32a0;
-    cursor: pointer;
-    font-weight: bold;
-    margin-left: auto;
-    margin-right: 10px;
-}
-#nthu-helper-save-schedule-btn:disabled {
-    cursor: not-allowed;
-    background-color: #e9ecef;
-    color: #6c757d;
-}
-#nthu-helper-open-temp-list-btn {
-    padding: 5px 10px;
-    border: 1px solid #658487;
-    border-radius: 4px;
-    background-color: #e8f0fe;
-    color: #3d32a0;
-    cursor: pointer;
-    font-weight: bold;
-    margin-left: auto;
-    margin-right: 10px;
 }
 /* --- Loading Spinner 動畫 --- */
 .spinner {
@@ -946,6 +984,69 @@ td:hover .nthu-helper-search-btn {
 .saved-courses-table td:nth-child(7) { width: 8%;  }
 .saved-courses-table th:nth-child(8),
 .saved-courses-table td:nth-child(8) { width: 10%; text-align: center; }
+/* --- 偏好設定 Modal 樣式 --- */
+#nthu-helper-modal-content.preferences-modal {
+    width: 92%;
+    max-width: 560px;
+    height: auto;
+    max-height: 85vh;
+}
+.preferences-modal .modal-header {
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.preferences-modal .preferences-note {
+    color: #666;
+    font-size: small;
+    margin-right: auto;
+    white-space: normal;
+}
+.preferences-list {
+    display: flex;
+    flex-direction: column;
+}
+.preference-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 12px 4px;
+    border-bottom: 1px solid #eee;
+}
+.preference-item:last-child {
+    border-bottom: none;
+}
+.preference-label {
+    font-size: 14px;
+    color: #222;
+}
+.preference-hint {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #777;
+}
+/* switch 本身是 inline-block，在 flex 子項裡不能被壓扁 */
+.preference-item .switch {
+    flex: none;
+}
+/* 滑桿型項目：說明在上，滑桿占滿下方一整列 */
+.preference-item-column {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+.preference-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #666;
+}
+.preference-range input[type="range"] {
+    flex-grow: 1;
+    min-width: 0;
+}
+
 .no-saved-courses {
     text-align: center;
     color: #888;

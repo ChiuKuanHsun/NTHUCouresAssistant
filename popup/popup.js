@@ -44,12 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const goToScheduleBtn = document.getElementById('go-to-schedule');
     
     // --- 設定區塊元素 ---
-    const allowGeClashCheckbox = document.getElementById('allow-ge-clash');
-    const colorThemeSelect = document.getElementById('color-theme'); // 新增
-
-    // --- 框架比例設定元素 ---
-    const ratioSlider = document.getElementById('frameset-ratio');
-    const saveRatioBtn = document.getElementById('save-ratio-btn');
+    // 衝堂與框架比例已移至選課頁面上的「偏好設定」視窗
+    const colorThemeSelect = document.getElementById('color-theme');
     
     // --- 課表區塊元素 ---
     const scheduleContainer = document.getElementById('schedule-container');
@@ -96,38 +92,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAndRenderSchedule();
 
     // 2. 載入儲存的設定
-    chrome.storage.sync.get(['allowGeClash', 'colorTheme', 'framesetRatio'], (result) => {
-        allowGeClashCheckbox.checked = result.allowGeClash || false;
-        colorThemeSelect.value = result.colorTheme || 'default'; // 載入顏色設定
-        ratioSlider.value = result.framesetRatio || 350;
+    chrome.storage.sync.get(['colorTheme'], (result) => {
+        colorThemeSelect.value = result.colorTheme || 'default';
     });
 
-    // 3. 監聽設定變更並儲存
-    allowGeClashCheckbox.addEventListener('change', () => {
-        chrome.storage.sync.set({ allowGeClash: allowGeClashCheckbox.checked });
-    });
-
-    // 【新增】監聽顏色主題變更
+    // 3. 監聽顏色主題變更並儲存
     colorThemeSelect.addEventListener('change', () => {
         chrome.storage.sync.set({ colorTheme: colorThemeSelect.value });
-    });
-
-    // ... (保留原本的 framesetRatio 邏輯) ...
-    saveRatioBtn.addEventListener('click', () => {
-        const newRatio = ratioSlider.value;
-        chrome.storage.sync.set({ 'framesetRatio': newRatio }, () => {
-            alert('比例已儲存！');
-        });
-        chrome.tabs.query({ url: "*://www.ccxp.nthu.edu.tw/ccxp/COURSE/JH/7/7.1/7.1.3/JH713003.php*" }, (tabs) => {
-            if (tabs.length > 0) {
-                chrome.tabs.sendMessage(tabs[0].id, {
-                    action: "updateFramesetRatio",
-                    ratio: newRatio
-                });
-            } else {
-                alert('找不到選課頁面分頁。此設定將在您下次開啟選課頁面時生效。');
-            }
-        });
     });
 
     // 【新增】啟動定時器，每分鐘檢查一次目前時間

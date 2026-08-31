@@ -13,29 +13,21 @@ const NthuCourseHelperUI = {
         const geClashCheckbox = isGePage 
             ? `<label><input type="checkbox" id="nthu-helper-allow-ge-clash"> 允許通識衝堂</label>`
             : '';
-        
-        // 等待 DOM 插入後再設定勾選狀態
-        setTimeout(() => {
-            chrome.storage.sync.get(['allowGeClash'], (result) => {
-            const allowGeClashCheckbox = document.getElementById('nthu-helper-allow-ge-clash');
-            if (allowGeClashCheckbox && result.allowGeClash) {
-                allowGeClashCheckbox.checked = true;
-            }
-            });
-        }, 0);
+
 
         container.innerHTML = `
             <div class="nthu-helper-header">
                 <h2>NTHU COURSE ASSISTANT</h2>
                 <button id="nthu-helper-toggle-btn" type="button" style="margin-right: auto;">展開</button>
-                <div>
+                <div class="nthu-helper-header-actions">
+                    <button id="nthu-helper-open-prefs-btn" type="button" class="btn">偏好設定</button>
                     <button id="nthu-helper-open-temp-list-btn" type="button" class="btn">開啟暫存課程清單</button>
                     <button id="nthu-helper-save-schedule-btn" type="button" class="btn">儲存課表至擴充功能</button>
                     <button id="nthu-helper-refresh-counts-btn" type="button" class="btn">更新即時人數</button>
                 </div>
             </div>
             <div class="nthu-helper-content">
-                <div class="filters">
+                <div class="filters" style="margin-top: 10px;">
                     <input type="text" id="nthu-helper-filter-courseNo" placeholder="篩選科目代碼...">
                     <input type="text" id="nthu-helper-filter-name" placeholder="篩選科目名稱...">
                     <input type="text" id="nthu-helper-filter-teacher" placeholder="篩選教師姓名...">
@@ -44,8 +36,13 @@ const NthuCourseHelperUI = {
                       ${geClashCheckbox}
                       <label><input type="checkbox" id="nthu-helper-allow-xclass-clash"> 允許X-Class衝堂</label>
                     </div>
-                      
-                    
+                    <div class="campus-filter-container">
+                        <span class="switch-label">校區</span>
+                        <div class="campus-options">
+                            <label><input type="checkbox" value="main" checked><span>校本部</span></label>
+                            <label><input type="checkbox" value="nanda" checked><span>南大校區</span></label>
+                        </div>
+                    </div>
                 </div>
                 <div class="advanced-filters" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                     <div class="time-grid-container collapsed">

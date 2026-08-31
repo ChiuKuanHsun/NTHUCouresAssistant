@@ -15,6 +15,11 @@ const NthuCourseParser = {
         return slots;
     },
 
+    // 依教室判斷校區：教室含 Nanda 字樣者屬南大校區，其餘一律視為校本部
+    parseCampus(room) {
+        return /nanda/i.test(room) ? 'nanda' : 'main';
+    },
+
     // 解析單個課程行 (row)
     parseCourseRow(row, columnIndexes) {
         // 確保所有必要的索引都存在
@@ -95,13 +100,16 @@ const NthuCourseParser = {
             }
         }
 
+        const room = row.cells[columnIndexes.room].innerText.trim();
+
         return {
             id: row.cells[columnIndexes.id].innerText.trim(),
             name: courseTitleCellText.split('\n')[0].trim(),
             nameEn: courseTitleCellText.split('\n')[1]?.trim() || '',
             credit: row.cells[columnIndexes.credit].innerText.trim(),
             time: this.parseTimeCode(row.cells[columnIndexes.time].innerText.trim()), 
-            room: row.cells[columnIndexes.room].innerText.trim(),
+            room: room,
+            campus: this.parseCampus(room),
             teacher: row.cells[columnIndexes.teacher].innerText.trim(),
             isGe: isGeCourse,
             geCategory: geCategory,
