@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "清大選課助手 NTHU Course Selection Assistant",
-  "version": "1.0",
+  "version": "1.1.0",
   "description": "改善清華大學網路選課系統的體驗，提供進階篩選與評價查詢功能。Enhance NTHU's course selection system with advanced filtering and review lookup features.",
   "permissions": [
     "storage",
