@@ -91,7 +91,7 @@ const NthuCoursePrefs = {
             key: 'geminiApiKey',
             type: 'secret',
             label: 'Google AI Studio API Key',
-            hint: '到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> 免費建立。只存在這台電腦，不會同步到其他裝置。',
+            hint: '到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> 免費建立。只存在這台電腦，不會同步到其他裝置，也不會儲存於任何伺服器。',
             placeholder: 'AIza…'
         },
         {
@@ -105,14 +105,14 @@ const NthuCoursePrefs = {
             key: 'aiLanguage',
             type: 'select',
             label: '摘要回答語言',
-            hint: '不論大綱是中文還是英文，一律用這個語言回答。',
+            hint: '不論大綱是中文還是英文，一律用此語言回答。',
             options: 'AI_LANGUAGES'
         },
         {
             key: 'aiAutoOpen',
             type: 'toggle',
             label: '開啟大綱頁時自動展開 AI 摘要',
-            hint: '按「大綱／Syllabus」開出大綱視窗時，右側的 AI 摘要抽屜直接打開，不必再點右上角的按鈕。'
+            hint: '按「大綱／Syllabus」開出大綱視窗時，右側的 AI 摘要直接打開，不必再點右上角的按鈕。'
         },
         {
             key: 'aiAutoGenerate',
