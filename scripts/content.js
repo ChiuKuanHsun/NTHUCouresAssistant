@@ -423,6 +423,11 @@ async function initSyllabusPage() {
         state.status = 'done';
     }
     render();
+
+    // 偏好設定：自動展開抽屜／沒有快取時自動產生。兩項各自獨立，
+    // 只開自動產生的話會在背景跑，做完按鈕上會亮綠點。
+    if (prefs.aiAutoOpen) setOpen(true);
+    if (!cached && prefs.aiAutoGenerate && prefs.geminiApiKey) run(false);
 }
 /**
  * 開啟「歷年成績分佈」視窗並查詢。

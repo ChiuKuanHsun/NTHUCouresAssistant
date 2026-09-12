@@ -26,7 +26,9 @@ const NthuCoursePrefs = {
         // AI 大綱統整
         geminiApiKey: '',
         aiModel: 'gemini-3.5-flash-lite',
-        aiLanguage: 'zh-TW'
+        aiLanguage: 'zh-TW',
+        aiAutoOpen: false,
+        aiAutoGenerate: false
     },
 
     // AI 摘要的回答語言。prompt 欄位是塞進 system instruction 的英文描述。
@@ -105,6 +107,18 @@ const NthuCoursePrefs = {
             label: '摘要回答語言',
             hint: '不論大綱是中文還是英文，一律用這個語言回答。',
             options: 'AI_LANGUAGES'
+        },
+        {
+            key: 'aiAutoOpen',
+            type: 'toggle',
+            label: '開啟大綱頁時自動展開 AI 摘要',
+            hint: '按「大綱／Syllabus」開出大綱視窗時，右側的 AI 摘要抽屜直接打開，不必再點右上角的按鈕。'
+        },
+        {
+            key: 'aiAutoGenerate',
+            type: 'toggle',
+            label: '大綱頁自動取得摘要',
+            hint: '開出大綱視窗時，這門課還沒有摘要就自動呼叫 Gemini 產生。每開一門沒看過的課就會用掉一次 API 額度。'
         }
     ],
 

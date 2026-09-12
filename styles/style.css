@@ -996,7 +996,7 @@ td:hover .nthu-helper-ai-btn {
 .saved-courses-table th:nth-child(1),
 .saved-courses-table td:nth-child(1) { width: 12%; }
 .saved-courses-table th:nth-child(2),
-.saved-courses-table td:nth-child(2) { width: 26%; }
+.saved-courses-table td:nth-child(2) { width: 23%; }
 .saved-courses-table th:nth-child(3),
 .saved-courses-table td:nth-child(3) { width: 11%; }
 .saved-courses-table th:nth-child(4),
@@ -1004,9 +1004,9 @@ td:hover .nthu-helper-ai-btn {
 .saved-courses-table th:nth-child(5),
 .saved-courses-table td:nth-child(5) { width: 12%; }
 .saved-courses-table th:nth-child(6),
-.saved-courses-table td:nth-child(6) { width: 16%; }
+.saved-courses-table td:nth-child(6) { width: 15%; }
 .saved-courses-table th:nth-child(7),
-.saved-courses-table td:nth-child(7) { width: 8%;  }
+.saved-courses-table td:nth-child(7) { width: 12%; }
 .saved-courses-table th:nth-child(8),
 .saved-courses-table td:nth-child(8) { width: 10%; text-align: center; }
 /* --- 歷年成績分佈 Modal 樣式 --- */
@@ -1787,9 +1787,14 @@ h2 > .nthu-icon,
     align-items: center;
     color: #555;
 }
-.saved-courses-table .ai-btn {
+/* 加選／大綱／AI 都用同樣的盒模型與高度，並排時才會對齊 */
+.saved-courses-table .action-cell .btn2 {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    height: 26px;
+    box-sizing: border-box;
+    vertical-align: middle;
 }
 
 /* --- 課程表格的原生按鈕（加選／大綱）與暫存清單的按鈕：統一外觀 ---
