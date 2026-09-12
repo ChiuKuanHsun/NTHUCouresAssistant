@@ -146,6 +146,10 @@ const NthuCourseHelperUI = {
                 nameCell.style.position = 'relative';
                 nameCell.appendChild(this.createSearchButton(index));
                 nameCell.appendChild(this.createGradeStatsButton(index));
+                // 沒有大綱按鈕的課（極少數）就沒東西可以統整
+                if (courses[index].syllabusActionArgs) {
+                    nameCell.appendChild(this.createSyllabusAIButton(index));
+                }
             }
         });
     },
@@ -177,6 +181,17 @@ const NthuCourseHelperUI = {
         button.type = 'button'; // 避免觸發 form submit
         button.innerHTML = '📊';
         button.title = '查詢歷年成績分佈（等級制平均值／標準差）';
+        button.dataset.index = index;
+        return button;
+    },
+
+    // 建立「AI 大綱統整」按鈕
+    createSyllabusAIButton(index) {
+        const button = document.createElement('button');
+        button.className = 'nthu-helper-ai-btn';
+        button.type = 'button'; // 避免觸發 form submit
+        button.innerHTML = '✨';
+        button.title = 'AI 統整課程大綱（評分方式、作業考試、AI 使用限制…）';
         button.dataset.index = index;
         return button;
     },

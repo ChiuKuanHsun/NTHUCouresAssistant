@@ -8,8 +8,12 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://www.ccxp.nthu.edu.tw/ccxp/*","https://nthucourseselectiontemplate.pages.dev/*"
+    "https://www.ccxp.nthu.edu.tw/ccxp/*","https://nthucourseselectiontemplate.pages.dev/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -33,6 +37,7 @@
         "scripts/modal.js",
         "scripts/parser.js",
         "scripts/gradeStats.js",
+        "scripts/syllabusAI.js",
         "scripts/filter.js",
         "scripts/ui.js",
         "scripts/content.js",

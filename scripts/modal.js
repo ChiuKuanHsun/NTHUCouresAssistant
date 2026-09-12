@@ -87,6 +87,7 @@ const NthuCourseModal = {
                 }
                 const syllabusActionCellHTML = course.syllabusActionArgs
                     ? `<button class="btn2 syllabus-btn" data-action="syllabus" data-course-id="${courseId}">大綱</button>`
+                      + `<button class="btn2 ai-btn" data-action="ai" data-course-id="${courseId}" title="AI 統整課程大綱">✨AI</button>`
                     : '';
 
                 return `
@@ -169,6 +170,47 @@ const NthuCourseModal = {
                     <div class="preference-hint">${item.hint}</div>
                 </div>`;
 
+            // 分組標題：只是視覺分隔，沒有對應的設定值
+            if (item.type === 'heading') {
+                return `<div class="preference-heading">${text}</div>`;
+            }
+
+            // 文字／機密輸入：離開欄位或按 Enter 才儲存（change 事件）。
+            // 機密欄位不用 type="password"：Chrome 看到就會跳密碼管理員要幫你存，
+            // 改用一般文字框加 CSS 遮罩（.preference-masked），並標記讓第三方管理員略過。
+            if (item.type === 'text' || item.type === 'secret') {
+                const isSecret = item.type === 'secret';
+                const reveal = isSecret
+                    ? `<button type="button" class="preference-reveal" title="顯示／隱藏">👁</button>`
+                    : '';
+                return `
+                    <div class="preference-item">
+                        ${text}
+                        <div class="preference-control">
+                            <input type="text" data-pref-key="${item.key}"
+                                   class="${isSecret ? 'preference-masked' : ''}"
+                                   value="${this.escapeHtml(prefs[item.key] || '')}"
+                                   placeholder="${this.escapeHtml(item.placeholder || '')}"
+                                   autocomplete="off" spellcheck="false"
+                                   ${isSecret ? 'data-lpignore="true" data-1p-ignore data-bwignore' : ''}>
+                            ${reveal}
+                        </div>
+                    </div>`;
+            }
+
+            if (item.type === 'select') {
+                const options = (NthuCoursePrefs[item.options] || [])
+                    .map(option => `<option value="${this.escapeHtml(option.value)}" ${prefs[item.key] === option.value ? 'selected' : ''}>${this.escapeHtml(option.label)}</option>`)
+                    .join('');
+                return `
+                    <div class="preference-item">
+                        ${text}
+                        <div class="preference-control">
+                            <select data-pref-key="${item.key}">${options}</select>
+                        </div>
+                    </div>`;
+            }
+
             // 滑桿型項目占一整列，滑桿在說明文字下方另起一行
             if (item.type === 'range') {
                 return `
@@ -208,7 +250,18 @@ const NthuCourseModal = {
         document.body.appendChild(modalOverlay);
 
         const list = modalContent.querySelector('.preferences-list');
-        const readValue = (input) => (input.type === 'checkbox' ? input.checked : Number(input.value));
+        const readValue = (input) => {
+            if (input.type === 'checkbox') return input.checked;
+            if (input.type === 'range') return Number(input.value);
+            return input.value.trim();
+        };
+
+        // API key 的顯示／隱藏切換
+        list.addEventListener('click', (event) => {
+            const button = event.target.closest('.preference-reveal');
+            if (!button) return;
+            button.parentElement.querySelector('input').classList.toggle('preference-masked');
+        });
 
         // input：滑桿拖曳中的即時預覽（不寫入儲存）
         list.addEventListener('input', (event) => {
@@ -219,8 +272,15 @@ const NthuCourseModal = {
         // change：勾選框切換、或滑桿放開後才真正儲存
         list.addEventListener('change', (event) => {
             const input = event.target;
-            if (input.tagName !== 'INPUT' || !input.dataset.prefKey) return;
+            if (!['INPUT', 'SELECT'].includes(input.tagName) || !input.dataset.prefKey) return;
             onChangeCallback(input.dataset.prefKey, readValue(input), true);
+        });
+        // 文字欄位按 Enter 直接定案，不必先點到別處
+        list.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && event.target.tagName === 'INPUT' && event.target.type !== 'range') {
+                event.preventDefault();
+                event.target.blur();
+            }
         });
 
         document.getElementById('nthu-helper-modal-close').addEventListener('click', () => this.close());
@@ -434,5 +494,200 @@ const NthuCourseModal = {
                 - body.getBoundingClientRect().top
                 - body.clientHeight / 2;
         }
+    },
+
+    /**
+     * 顯示「AI 大綱統整」互動視窗。
+     * 跟成績視窗一樣：外框只建一次，內容區交給 renderSyllabusAIBody 依狀態重畫。
+     *
+     * @param {Object} state - { course, status, stage, error, result }，見 renderSyllabusAIBody
+     * @param {Object} handlers - { onRegenerate, onOpenSyllabus, onOpenPrefs }
+     * @param {DOMRect} originRect - 觸發按鈕的位置，用於展開動畫的原點
+     */
+    showSyllabusAIModal(state, handlers, originRect) {
+        this.close(true);
+
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'nthu-helper-modal-overlay';
+        const modalContent = document.createElement('div');
+        modalContent.id = 'nthu-helper-modal-content';
+        modalContent.classList.add('syllabus-ai-modal');
+        if (originRect) {
+            const originX = originRect.left + originRect.width / 2;
+            const originY = originRect.top + originRect.height / 2;
+            modalContent.style.transformOrigin = `${originX}px ${originY}px`;
+        }
+        modalOverlay.classList.add('opening');
+
+        const course = state.course || {};
+        const subtitle = [course.id, course.name, (course.teacher || '').split('\n')[0]]
+            .filter(Boolean)
+            .join('　');
+
+        modalContent.innerHTML = `
+            <div class="modal-header">
+                <h2>✨ AI 大綱統整</h2>
+                <div class="syllabus-ai-subtitle">${this.escapeHtml(subtitle)}</div>
+                <div class="syllabus-ai-header-actions">
+                    ${handlers.onOpenSyllabus ? '<button type="button" class="syllabus-ai-action syllabus-ai-open">開啟原始大綱</button>' : ''}
+                    <button type="button" class="syllabus-ai-action syllabus-ai-regenerate">重新產生</button>
+                </div>
+                <button id="nthu-helper-modal-close">&times;</button>
+            </div>
+            <div class="modal-body syllabus-ai-body"></div>
+        `;
+        modalOverlay.appendChild(modalContent);
+        document.body.appendChild(modalOverlay);
+
+        const openButton = modalContent.querySelector('.syllabus-ai-open');
+        if (openButton) openButton.addEventListener('click', () => handlers.onOpenSyllabus());
+        modalContent.querySelector('.syllabus-ai-header-actions .syllabus-ai-regenerate')
+            .addEventListener('click', () => handlers.onRegenerate());
+        // 內容區重畫出來的按鈕（前往偏好設定、產生摘要）用事件委派接
+        modalContent.querySelector('.syllabus-ai-body').addEventListener('click', (event) => {
+            if (event.target.closest('.syllabus-ai-go-prefs') && handlers.onOpenPrefs) {
+                handlers.onOpenPrefs(event.target.getBoundingClientRect());
+            } else if (event.target.closest('.syllabus-ai-regenerate')) {
+                handlers.onRegenerate();
+            }
+        });
+
+        this.renderSyllabusAIBody(state, modalContent.querySelector('.syllabus-ai-body'));
+
+        document.getElementById('nthu-helper-modal-close').addEventListener('click', () => this.close());
+        modalOverlay.addEventListener('click', (event) => {
+            if (event.target === modalOverlay) this.close();
+        });
+    },
+
+    /**
+     * 重畫 AI 摘要的內容區。大綱頁上的內嵌面板也用這個函式，所以容器由呼叫端傳入。
+     *
+     * @param {Object} state
+     *        status: 'idle' | 'loading' | 'error' | 'done'
+     *        stage:  'fetch' | 'pdf' | 'generate'（loading 時的階段）
+     *        error:  Error 或字串；訊息為 'NO_API_KEY' 時顯示設定提示
+     *        result: NthuSyllabusAI.summarize 的回傳值
+     * @param {HTMLElement} [container] - 預設找目前 modal 內的 .syllabus-ai-body
+     */
+    renderSyllabusAIBody(state, container) {
+        const body = container
+            || document.querySelector('#nthu-helper-modal-content.syllabus-ai-modal .syllabus-ai-body');
+        if (!body) return;
+
+        // 外框（modal 或內嵌面板）標題列的「重新產生」，產生中先鎖住
+        const frame = body.closest('.syllabus-ai-modal, .nthu-helper-syllabus-ai-panel');
+        if (frame) {
+            frame.querySelectorAll('.syllabus-ai-regenerate')
+                .forEach(button => { button.disabled = state.status === 'loading'; });
+        }
+
+        if (state.status === 'idle') {
+            body.innerHTML = `
+                <div class="syllabus-ai-message">
+                    <button type="button" class="syllabus-ai-action syllabus-ai-regenerate">✨ 產生 AI 摘要</button>
+                    <div class="syllabus-ai-message-hint">會把大綱送給 Gemini 整理，使用你自己的 API 額度。</div>
+                </div>`;
+            return;
+        }
+
+        if (state.status === 'loading') {
+            const stageText = {
+                fetch: '讀取課程大綱中…',
+                pdf: '下載大綱 PDF 中…',
+                generate: 'Gemini 整理中，通常需要幾秒鐘…'
+            }[state.stage] || '準備中…';
+            body.innerHTML = `
+                <div class="syllabus-ai-message">
+                    <div class="syllabus-ai-spinner"></div>
+                    <div>${stageText}</div>
+                </div>`;
+            return;
+        }
+
+        if (state.status === 'error') {
+            const message = state.error?.message || String(state.error || '');
+            if (message === 'NO_API_KEY') {
+                body.innerHTML = `
+                    <div class="syllabus-ai-message">
+                        <div>還沒有設定 Google AI Studio API Key。</div>
+                        <div class="syllabus-ai-message-hint">到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> 免費建立一組，貼到偏好設定後就能使用。</div>
+                        <button type="button" class="syllabus-ai-action syllabus-ai-go-prefs">前往偏好設定</button>
+                    </div>`;
+                return;
+            }
+            body.innerHTML = `<div class="syllabus-ai-message error">${this.escapeHtml(message)}</div>`;
+            return;
+        }
+
+        body.innerHTML = this.renderSyllabusSummary(state.result);
+    },
+
+    // 把摘要 JSON 畫成卡片
+    renderSyllabusSummary(result) {
+        const summary = result.summary;
+        const labels = NthuSyllabusAI.labels(result.language);
+        const esc = (value) => this.escapeHtml(value);
+        const empty = `<p class="syllabus-ai-empty">${esc(labels.empty)}</p>`;
+        const paragraph = (text) => (text ? `<p>${esc(text)}</p>` : empty);
+        const bullets = (items) => (items.length
+            ? `<ul>${items.map(item => `<li>${esc(item)}</li>`).join('')}</ul>`
+            : empty);
+        const card = (key, content, extraClass = '') => `
+            <section class="syllabus-ai-card ${extraClass}">
+                <h3>${esc(labels[key])}</h3>
+                ${content}
+            </section>`;
+
+        // 評分方式：有百分比就畫成比例條；整份都沒有配分時退回單純的清單
+        const percentOf = (weight) => {
+            const match = (weight || '').match(/(\d+(?:\.\d+)?)\s*%/);
+            return match ? Math.min(100, Number(match[1])) : null;
+        };
+        let gradingHtml = empty;
+        if (summary.grading.some(entry => percentOf(entry.weight) !== null)) {
+            const rows = summary.grading.map(entry => {
+                const note = entry.note ? `<div class="note">${esc(entry.note)}</div>` : '';
+                return `
+                    <div class="item">${esc(entry.item)}</div>
+                    <div class="bar"><span style="width:${percentOf(entry.weight) || 0}%"></span></div>
+                    <div class="weight">${esc(entry.weight || '—')}</div>
+                    ${note}`;
+            }).join('');
+            gradingHtml = `<div class="syllabus-ai-grading">${rows}</div>`;
+        } else if (summary.grading.length) {
+            gradingHtml = bullets(summary.grading.map(entry => {
+                const detail = [entry.weight, entry.note].filter(Boolean).join('，');
+                return detail ? `${entry.item}（${detail}）` : entry.item;
+            }));
+        }
+        if (summary.gradingNotes) {
+            gradingHtml += `<p class="syllabus-ai-grading-notes">${esc(summary.gradingNotes)}</p>`;
+        }
+
+        const generatedAt = new Date(result.generatedAt);
+        const pad = (n) => String(n).padStart(2, '0');
+        const metaParts = [
+            result.source === 'pdf' ? labels.sourcePdf : labels.sourceText,
+            result.model,
+            `${generatedAt.getMonth() + 1}/${generatedAt.getDate()} ${pad(generatedAt.getHours())}:${pad(generatedAt.getMinutes())}`
+        ];
+        if (result.fromCache) metaParts.push(labels.cached);
+
+        return `
+            <div class="syllabus-ai-meta">${metaParts.map(part => `<span>${esc(part)}</span>`).join('')}</div>
+            ${card('overview', paragraph(summary.overview))}
+            ${card('grading', gradingHtml)}
+            <div class="syllabus-ai-grid">
+                ${card('assessments', bullets(summary.assessments))}
+                ${card('format', bullets(summary.format))}
+                ${card('materials', bullets(summary.materials))}
+                ${card('prerequisites', paragraph(summary.prerequisites))}
+            </div>
+            ${card('aiPolicy', paragraph(summary.aiPolicy), 'ai-policy')}
+            ${card('misc', bullets(summary.misc))}
+            ${card('tips', bullets(summary.tips), 'tips')}
+            <div class="syllabus-ai-disclaimer">${esc(labels.disclaimer)}</div>
+        `;
     }
 };

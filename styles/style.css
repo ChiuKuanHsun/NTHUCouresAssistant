@@ -476,7 +476,8 @@ input:checked + .slider:before {
 
 /* --- 查詢按鈕 --- */
 .nthu-helper-search-btn,
-.nthu-helper-grade-btn {
+.nthu-helper-grade-btn,
+.nthu-helper-ai-btn {
   position: absolute;
   top: 2px;
   right: 2px;
@@ -493,12 +494,16 @@ input:checked + .slider:before {
   transition: opacity 0.2s;
   padding: 0;
 }
-/* 成績按鈕排在查詢按鈕左邊 */
+/* 成績按鈕排在查詢按鈕左邊，AI 按鈕再往左 */
 .nthu-helper-grade-btn {
   right: 24px;
 }
+.nthu-helper-ai-btn {
+  right: 46px;
+}
 td:hover .nthu-helper-search-btn,
-td:hover .nthu-helper-grade-btn {
+td:hover .nthu-helper-grade-btn,
+td:hover .nthu-helper-ai-btn {
   opacity: 1;
 }
 
@@ -651,7 +656,8 @@ td:hover .nthu-helper-grade-btn {
 #nthu-helper-open-temp-list-btn,
 #nthu-helper-save-schedule-btn,
 #nthu-helper-refresh-counts-btn,
-.grade-stats-controls .grade-stats-search {
+.grade-stats-controls .grade-stats-search,
+.syllabus-ai-action {
     padding: 5px 10px;
     border: 1px solid #658487;
     border-radius: 4px;
@@ -665,7 +671,8 @@ td:hover .nthu-helper-grade-btn {
 #nthu-helper-open-temp-list-btn:disabled,
 #nthu-helper-save-schedule-btn:disabled,
 #nthu-helper-refresh-counts-btn:disabled,
-.grade-stats-controls .grade-stats-search:disabled {
+.grade-stats-controls .grade-stats-search:disabled,
+.syllabus-ai-action:disabled {
     cursor: not-allowed;
     background-color: #e9ecef;
     color: #6c757d;
@@ -1165,6 +1172,56 @@ td:hover .nthu-helper-grade-btn {
     flex-grow: 1;
     min-width: 0;
 }
+/* 分組標題：把後面幾項圈成一組 */
+.preference-heading {
+    padding: 18px 4px 6px;
+    border-bottom: 2px solid #e8f0fe;
+}
+.preference-heading .preference-label {
+    font-weight: bold;
+    color: #3d32a0;
+}
+.preference-hint a {
+    color: #3d32a0;
+}
+/* 文字／密碼／下拉：靠右、不被壓扁 */
+.preference-control {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.preference-control input[type="text"] {
+    width: 210px;
+    padding: 5px 8px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+/* API key 的遮罩：用 CSS 打點，不用 type="password"，才不會觸發密碼管理員 */
+.preference-control input.preference-masked {
+    -webkit-text-security: disc;
+}
+.preference-control input:focus {
+    outline: none;
+    border-color: #658487;
+}
+.preference-control select {
+    font-size: 13px;
+    padding: 5px 10px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.preference-reveal {
+    padding: 4px 6px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
 
 .no-saved-courses {
     text-align: center;
@@ -1376,4 +1433,299 @@ td:hover .nthu-helper-grade-btn {
     padding: 8px;
     color: #999;
     text-align: center;
+}
+/* --- AI 大綱統整 --- */
+#nthu-helper-modal-content.syllabus-ai-modal {
+    width: 92%;
+    max-width: 880px;
+    height: auto;
+    max-height: 88vh;
+}
+.syllabus-ai-modal .modal-header {
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.syllabus-ai-modal .syllabus-ai-subtitle {
+    color: #555;
+    font-size: small;
+    margin-right: auto;
+}
+.syllabus-ai-header-actions {
+    display: flex;
+    gap: 8px;
+}
+.syllabus-ai-body {
+    background: #f6f7fb;
+    /* 大綱視窗本身是 Times New Roman，內容區自己指定字體才不會跟著走 */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+}
+.syllabus-ai-message {
+    padding: 36px 0;
+    text-align: center;
+    color: #666;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.syllabus-ai-message.error {
+    color: #c00;
+}
+.syllabus-ai-message-hint {
+    font-size: 12px;
+    color: #888;
+}
+.syllabus-ai-message-hint a {
+    color: #3d32a0;
+}
+.syllabus-ai-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #dfe3f3;
+    border-top-color: #3d32a0;
+    border-radius: 50%;
+    animation: spinner-spin 0.8s linear infinite;
+}
+.syllabus-ai-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #777;
+}
+.syllabus-ai-meta span + span::before {
+    content: "\00b7";
+    margin-right: 10px;
+    color: #bbb;
+}
+.syllabus-ai-card {
+    background: #fff;
+    border: 1px solid #e3e6ee;
+    border-radius: 8px;
+    padding: 10px 14px 12px;
+    margin-bottom: 10px;
+}
+.syllabus-ai-card h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    color: #3d32a0;
+}
+.syllabus-ai-card p,
+.syllabus-ai-card li {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: #222;
+}
+.syllabus-ai-card ul {
+    margin: 0;
+    padding-left: 1.3em;
+}
+.syllabus-ai-card li + li {
+    margin-top: 2px;
+}
+.syllabus-ai-card .syllabus-ai-empty {
+    color: #999;
+    font-style: italic;
+}
+/* 比較短的幾張卡片兩兩並排 */
+.syllabus-ai-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.syllabus-ai-grid .syllabus-ai-card {
+    margin-bottom: 0;
+}
+@media (max-width: 720px) {
+    .syllabus-ai-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* 評分方式：項目／比例條／百分比 */
+.syllabus-ai-grading {
+    display: grid;
+    grid-template-columns: max-content 1fr max-content;
+    gap: 6px 12px;
+    align-items: center;
+}
+.syllabus-ai-grading .item {
+    font-size: 13.5px;
+    color: #222;
+}
+.syllabus-ai-grading .bar {
+    height: 8px;
+    background: #eef0f7;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.syllabus-ai-grading .bar span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #7c8fff, #3d32a0);
+    border-radius: 4px;
+}
+.syllabus-ai-grading .weight {
+    font-size: 13px;
+    font-weight: bold;
+    color: #3d32a0;
+    min-width: 3em;
+    text-align: right;
+}
+.syllabus-ai-grading .note {
+    grid-column: 1 / -1;
+    margin-top: -4px;
+    font-size: 12px;
+    color: #666;
+}
+.syllabus-ai-grading-notes {
+    margin-top: 8px !important;
+    padding-top: 8px;
+    border-top: 1px dashed #e3e6ee;
+    font-size: 12.5px !important;
+    color: #555 !important;
+}
+.syllabus-ai-card.ai-policy {
+    border-color: #ffd58a;
+    background: #fffaf0;
+}
+.syllabus-ai-card.ai-policy h3 {
+    color: #a05a00;
+}
+.syllabus-ai-card.tips {
+    border-color: #bcd7c6;
+    background: #f3faf5;
+}
+.syllabus-ai-card.tips h3 {
+    color: #1f6b3a;
+}
+.syllabus-ai-disclaimer {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+}
+
+/* --- 大綱視窗（common/Syllabus/1.php）：右上角按鈕 + 右側抽屜 --- */
+.nthu-helper-syllabus-ai-launcher {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 9000;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: 1px solid #c9d4f0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #3d32a0;
+    font-size: 13px;
+    font-weight: bold;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(61, 50, 160, 0.15);
+    transition: background-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.nthu-helper-syllabus-ai-launcher:hover {
+    background: #e8f0fe;
+    box-shadow: 0 3px 12px rgba(61, 50, 160, 0.25);
+}
+/* 抽屜打開後按鈕會跟抽屜標題列疊在一起，抽屜自己有 ✕，按鈕先藏起來 */
+.nthu-helper-syllabus-ai-launcher.active {
+    display: none;
+}
+/* 已有快取摘要：右上角一個小綠點 */
+.nthu-helper-syllabus-ai-launcher .dot {
+    display: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2e9e5b;
+    box-shadow: 0 0 0 2px #fff;
+}
+.nthu-helper-syllabus-ai-launcher.has-summary .dot {
+    display: block;
+}
+
+.nthu-helper-syllabus-ai-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 8999;
+    width: 440px;
+    max-width: 92vw;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-left: 1px solid #c9d4f0;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+    text-align: left;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
+}
+.nthu-helper-syllabus-ai-drawer.open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.25s ease;
+}
+.nthu-helper-syllabus-ai-drawer .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #e8f0fe;
+    border-bottom: 1px solid #c9d4f0;
+    flex: none;
+}
+.nthu-helper-syllabus-ai-drawer .panel-header h2 {
+    margin: 0 auto 0 0;
+    font-size: 15px;
+    color: #3d32a0;
+    white-space: nowrap;
+}
+.nthu-helper-syllabus-ai-drawer .panel-header .syllabus-ai-action {
+    padding: 3px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.nthu-helper-syllabus-ai-drawer .syllabus-ai-close {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #c9d4f0;
+    border-radius: 50%;
+    background: #fff;
+    color: #3d32a0;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+.nthu-helper-syllabus-ai-drawer .syllabus-ai-close:hover {
+    background: #d6e2fb;
+}
+.nthu-helper-syllabus-ai-drawer .panel-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 12px;
+}
+/* 抽屜打開時把頁面內容往左推，讓 650px 的大綱表格和抽屜並排；
+   視窗不夠寬（推了也放不下）就讓抽屜直接覆蓋在上面 */
+body.nthu-helper-syllabus-ai-open {
+    padding-right: 440px;
+    transition: padding-right 0.25s ease;
+}
+@media (max-width: 1150px) {
+    body.nthu-helper-syllabus-ai-open {
+        padding-right: 0;
+    }
+}
+/* 抽屜比 modal 窄，卡片一律單欄 */
+.nthu-helper-syllabus-ai-drawer .syllabus-ai-grid {
+    grid-template-columns: 1fr;
 }

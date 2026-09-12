@@ -249,9 +249,180 @@ function openSavedCoursesModal(buttonRect) {
                 executeInPageContext('checks', course.addActionArgs);
             } else if (action === 'syllabus' && course.syllabusActionArgs) {
                 executeInPageContext('syllabus', course.syllabusActionArgs);
+            } else if (action === 'ai' && course.syllabusActionArgs) {
+                openSyllabusAIModal(course, target.getBoundingClientRect());
             }
         });
     }
+}
+
+/**
+ * 開啟偏好設定視窗。標題列的按鈕與 AI 摘要視窗的「前往偏好設定」共用。
+ */
+async function openPreferencesModal(originRect) {
+    const currentPrefs = await NthuCoursePrefs.load();
+    NthuCourseModal.showPreferencesModal(
+        currentPrefs,
+        (key, value, committed) => {
+            // 框架比例是唯一會即時生效的項目，拖曳過程中就跟著動
+            if (key === 'framesetRatio') {
+                applyFramesetRatioToTop(value);
+            }
+            if (committed) {
+                NthuCoursePrefs.set(key, value);
+            }
+        },
+        originRect
+    );
+}
+
+/**
+ * 驅動一次 AI 大綱統整：狀態機 idle → loading（fetch/pdf/generate）→ done | error。
+ * modal 與大綱頁的內嵌面板都用這個，差別只在 render 把內容畫到哪裡。
+ *
+ * @param {Object} state - 由呼叫端持有並傳給 render 的狀態物件
+ * @param {Function} render - 狀態變動時重畫
+ * @param {Object} options - 傳給 NthuSyllabusAI.summarize 的參數（courseId / cKey / doc）
+ * @returns {Function} run(force)：開始產生；force 為 true 時略過快取
+ */
+function createSyllabusAIRunner(state, render, options) {
+    // 使用者可能在還沒回來前就關掉視窗、改點別堂課，舊的結果不該畫進新視窗
+    let session = 0;
+    return async (force) => {
+        const current = ++session;
+        state.status = 'loading';
+        state.stage = null;
+        state.error = null;
+        render();
+        try {
+            const result = await NthuSyllabusAI.summarize({
+                ...options,
+                force,
+                onProgress: (stage) => {
+                    if (current !== session) return;
+                    state.stage = stage;
+                    render();
+                }
+            });
+            if (current !== session) return;
+            state.result = result;
+            state.status = 'done';
+        } catch (error) {
+            if (current !== session) return;
+            console.error('AI 大綱統整失敗：', error);
+            state.error = error;
+            state.status = 'error';
+        }
+        render();
+    };
+}
+
+let syllabusAIModalSession = 0;
+
+/**
+ * 從課程列表／暫存清單開啟「AI 大綱統整」視窗。
+ * 大綱是另外 fetch 的，不必真的把大綱視窗打開。
+ */
+function openSyllabusAIModal(course, originRect) {
+    const session = ++syllabusAIModalSession;
+    const state = { course, status: 'loading', stage: null, error: null, result: null };
+    const render = () => {
+        if (session === syllabusAIModalSession) NthuCourseModal.renderSyllabusAIBody(state);
+    };
+    const run = createSyllabusAIRunner(state, render, {
+        courseId: course.id,
+        cKey: course.syllabusActionArgs[0]
+    });
+
+    NthuCourseModal.showSyllabusAIModal(state, {
+        onRegenerate: () => run(true),
+        onOpenSyllabus: () => executeInPageContext('syllabus', course.syllabusActionArgs),
+        onOpenPrefs: (rect) => openPreferencesModal(rect)
+    }, originRect);
+
+    run(false);
+}
+
+/**
+ * 大綱視窗（common/Syllabus/1.php）本身：右上角放一顆小按鈕，點了從右側滑出抽屜。
+ * 不直接把摘要塞在頁面最上面，原始大綱才是這頁的主角；抽屜跟原文並排，方便對照。
+ * 這頁的大綱就在眼前，直接拿 document 解析，不必再連線一次。
+ * 有快取就在按鈕上點一個綠點、開抽屜時直接顯示；沒有的話等使用者按了才打 API，不偷偷消耗額度。
+ */
+async function initSyllabusPage() {
+    const parsed = NthuSyllabusAI.parseSyllabusDoc(document);
+    if (!parsed.id) return;
+
+    const launcher = document.createElement('button');
+    launcher.type = 'button';
+    launcher.className = 'nthu-helper-syllabus-ai-launcher';
+    launcher.title = 'AI 統整這份課程大綱';
+    launcher.innerHTML = '<span class="icon">✨</span><span class="label">AI 統整</span><span class="dot"></span>';
+
+    const drawer = document.createElement('aside');
+    // 沿用 .nthu-helper-syllabus-ai-panel：renderSyllabusAIBody 靠這個 class 找到「重新產生」按鈕來鎖
+    drawer.className = 'nthu-helper-syllabus-ai-panel nthu-helper-syllabus-ai-drawer';
+    drawer.innerHTML = `
+        <div class="panel-header">
+            <h2>✨ AI 大綱統整</h2>
+            <button type="button" class="syllabus-ai-action syllabus-ai-regenerate">重新產生</button>
+            <button type="button" class="syllabus-ai-action syllabus-ai-prefs">偏好設定</button>
+            <button type="button" class="syllabus-ai-close" title="關閉 (Esc)">&times;</button>
+        </div>
+        <div class="panel-body syllabus-ai-body"></div>
+    `;
+    document.body.appendChild(launcher);
+    document.body.appendChild(drawer);
+
+    const body = drawer.querySelector('.syllabus-ai-body');
+    const state = {
+        course: { id: parsed.id, name: parsed.name, teacher: parsed.teacher },
+        status: 'idle', stage: null, error: null, result: null
+    };
+    const render = () => {
+        NthuCourseModal.renderSyllabusAIBody(state, body);
+        launcher.classList.toggle('has-summary', state.status === 'done');
+    };
+    const run = createSyllabusAIRunner(state, render, { courseId: parsed.id, doc: document });
+
+    const setOpen = (open) => {
+        drawer.classList.toggle('open', open);
+        launcher.classList.toggle('active', open);
+        launcher.setAttribute('aria-expanded', String(open));
+        // 視窗夠寬時把頁面內容往左讓出抽屜的寬度，原文不會被蓋住（CSS 裡窄視窗會忽略）
+        document.body.classList.toggle('nthu-helper-syllabus-ai-open', open);
+    };
+    launcher.addEventListener('click', () => setOpen(!drawer.classList.contains('open')));
+    drawer.querySelector('.syllabus-ai-close').addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && drawer.classList.contains('open')) setOpen(false);
+    });
+
+    drawer.querySelector('.panel-header .syllabus-ai-regenerate').addEventListener('click', () => run(true));
+    drawer.querySelector('.syllabus-ai-prefs').addEventListener('click', (event) => {
+        openPreferencesModal(event.target.getBoundingClientRect());
+    });
+    body.addEventListener('click', (event) => {
+        if (event.target.closest('.syllabus-ai-go-prefs')) {
+            openPreferencesModal(event.target.getBoundingClientRect());
+        } else if (event.target.closest('.syllabus-ai-regenerate')) {
+            run(false);
+        }
+    });
+
+    // 有快取就先備好，否則停在 idle 等使用者按
+    const prefs = await NthuCoursePrefs.load();
+    const cached = prefs.geminiApiKey
+        ? await NthuSyllabusAI.getCached(
+            NthuSyllabusAI.normalizeId(parsed.id),
+            NthuCoursePrefs.resolveLanguage(prefs).value,
+            NthuCoursePrefs.resolveModel(prefs))
+        : null;
+    if (cached) {
+        state.result = { ...cached, fromCache: true };
+        state.status = 'done';
+    }
+    render();
 }
 /**
  * 開啟「歷年成績分佈」視窗並查詢。
@@ -327,6 +498,11 @@ async function main() {
         if (prefs.framesetRatio) {
             applyFramesetRatio(prefs.framesetRatio);
         }
+    }
+    // 「大綱」按鈕開出來的視窗：嵌入 AI 統整面板後就結束，下面都是課程表格的事
+    if (window.location.pathname.includes('/common/Syllabus/')) {
+        initSyllabusPage();
+        return;
     }
     // 檢查這是否是「加選」的那個表格
     const deptSelect = document.querySelector('select[name="new_dept"]');
@@ -501,21 +677,8 @@ function setupEventListeners(courses, table, backToTopButton, prefs) {
         openSavedCoursesModal();
     });
     if (openPrefsBtn) {
-        openPrefsBtn.addEventListener('click', async () => {
-            const currentPrefs = await NthuCoursePrefs.load();
-            NthuCourseModal.showPreferencesModal(
-                currentPrefs,
-                (key, value, committed) => {
-                    // 框架比例是唯一會即時生效的項目，拖曳過程中就跟著動
-                    if (key === 'framesetRatio') {
-                        applyFramesetRatioToTop(value);
-                    }
-                    if (committed) {
-                        NthuCoursePrefs.set(key, value);
-                    }
-                },
-                openPrefsBtn.getBoundingClientRect()
-            );
+        openPrefsBtn.addEventListener('click', () => {
+            openPreferencesModal(openPrefsBtn.getBoundingClientRect());
         });
     }
     toggleBtn.addEventListener('click', (event) => {
@@ -659,6 +822,17 @@ function setupEventListeners(courses, table, backToTopButton, prefs) {
         const course = courses[parseInt(target.dataset.index, 10)];
         if (course) {
             openGradeStatsModal(course, target.getBoundingClientRect());
+        }
+    });
+
+    // --- AI 大綱統整按鈕的事件 ---
+    table.addEventListener('click', (event) => {
+        const target = event.target.closest('.nthu-helper-ai-btn');
+        if (!target) return;
+
+        const course = courses[parseInt(target.dataset.index, 10)];
+        if (course && course.syllabusActionArgs) {
+            openSyllabusAIModal(course, target.getBoundingClientRect());
         }
     });
 
