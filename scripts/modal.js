@@ -87,7 +87,7 @@ const NthuCourseModal = {
                 }
                 const syllabusActionCellHTML = course.syllabusActionArgs
                     ? `<button class="btn2 syllabus-btn" data-action="syllabus" data-course-id="${courseId}">大綱</button>`
-                      + `<button class="btn2 ai-btn" data-action="ai" data-course-id="${courseId}" title="AI 統整課程大綱">✨AI</button>`
+                      + `<button class="btn2 ai-btn" data-action="ai" data-course-id="${courseId}" title="AI 統整課程大綱">${NthuIcons.svg('sparkle', 12)}AI</button>`
                     : '';
 
                 return `
@@ -181,7 +181,7 @@ const NthuCourseModal = {
             if (item.type === 'text' || item.type === 'secret') {
                 const isSecret = item.type === 'secret';
                 const reveal = isSecret
-                    ? `<button type="button" class="preference-reveal" title="顯示／隱藏">👁</button>`
+                    ? `<button type="button" class="preference-reveal" title="顯示／隱藏">${NthuIcons.svg('eye', 15)}</button>`
                     : '';
                 return `
                     <div class="preference-item">
@@ -260,7 +260,8 @@ const NthuCourseModal = {
         list.addEventListener('click', (event) => {
             const button = event.target.closest('.preference-reveal');
             if (!button) return;
-            button.parentElement.querySelector('input').classList.toggle('preference-masked');
+            const masked = button.parentElement.querySelector('input').classList.toggle('preference-masked');
+            button.innerHTML = NthuIcons.svg(masked ? 'eye' : 'eyeOff', 15);
         });
 
         // input：滑桿拖曳中的即時預覽（不寫入儲存）
@@ -526,7 +527,7 @@ const NthuCourseModal = {
 
         modalContent.innerHTML = `
             <div class="modal-header">
-                <h2>✨ AI 大綱統整</h2>
+                <h2>${NthuIcons.svg('sparkle', 18)}AI 大綱統整</h2>
                 <div class="syllabus-ai-subtitle">${this.escapeHtml(subtitle)}</div>
                 <div class="syllabus-ai-header-actions">
                     ${handlers.onOpenSyllabus ? '<button type="button" class="syllabus-ai-action syllabus-ai-open">開啟原始大綱</button>' : ''}
@@ -585,7 +586,7 @@ const NthuCourseModal = {
         if (state.status === 'idle') {
             body.innerHTML = `
                 <div class="syllabus-ai-message">
-                    <button type="button" class="syllabus-ai-action syllabus-ai-regenerate">✨ 產生 AI 摘要</button>
+                    <button type="button" class="syllabus-ai-action syllabus-ai-regenerate">${NthuIcons.svg('sparkle', 14)}產生 AI 摘要</button>
                     <div class="syllabus-ai-message-hint">會把大綱送給 Gemini 整理，使用你自己的 API 額度。</div>
                 </div>`;
             return;
@@ -623,6 +624,9 @@ const NthuCourseModal = {
         body.innerHTML = this.renderSyllabusSummary(state.result);
     },
 
+    // 堆疊條各段的顏色：以擴充功能主色開頭，其餘挑明度接近、色相拉開的顏色，相鄰不混淆
+    GRADING_COLORS: ['#3d32a0', '#4f8def', '#2e9e5b', '#e8a33d', '#d9536b', '#8e5cc9', '#26a6a0', '#a0774e'],
+
     // 把摘要 JSON 畫成卡片
     renderSyllabusSummary(result) {
         const summary = result.summary;
@@ -639,22 +643,48 @@ const NthuCourseModal = {
                 ${content}
             </section>`;
 
-        // 評分方式：有百分比就畫成比例條；整份都沒有配分時退回單純的清單
+        // 評分方式：有百分比就畫成一條 100% 堆疊橫條 + 下方圖例清單；
+        // 整份都沒有配分時退回單純的清單
         const percentOf = (weight) => {
             const match = (weight || '').match(/(\d+(?:\.\d+)?)\s*%/);
             return match ? Math.min(100, Number(match[1])) : null;
         };
         let gradingHtml = empty;
         if (summary.grading.some(entry => percentOf(entry.weight) !== null)) {
-            const rows = summary.grading.map(entry => {
-                const note = entry.note ? `<div class="note">${esc(entry.note)}</div>` : '';
-                return `
-                    <div class="item">${esc(entry.item)}</div>
-                    <div class="bar"><span style="width:${percentOf(entry.weight) || 0}%"></span></div>
-                    <div class="weight">${esc(entry.weight || '—')}</div>
-                    ${note}`;
-            }).join('');
-            gradingHtml = `<div class="syllabus-ai-grading">${rows}</div>`;
+            const entries = summary.grading.map((entry, index) => ({
+                ...entry,
+                percent: percentOf(entry.weight),
+                color: this.GRADING_COLORS[index % this.GRADING_COLORS.length]
+            }));
+            const total = entries.reduce((sum, entry) => sum + (entry.percent || 0), 0);
+            // 大綱寫的配分有時加起來超過 100（含 bonus、或區間取了上限），按比例縮回一條；
+            // 不足 100 的部分留一段灰色，代表大綱沒交代的比例
+            const scale = total > 100 ? 100 / total : 1;
+            const segments = entries
+                .filter(entry => entry.percent)
+                .map(entry => {
+                    const width = entry.percent * scale;
+                    // 太窄的段放不下文字，只留 tooltip
+                    const label = width >= 9 ? esc(entry.weight) : '';
+                    return `<span class="segment" style="width:${width}%;background:${entry.color}"
+                                  title="${esc(entry.item)} ${esc(entry.weight)}">${label}</span>`;
+                })
+                .join('');
+            const rest = total < 100
+                ? `<span class="segment rest" style="width:${100 - total}%" title="${esc(labels.gradingRest)} ${100 - total}%"></span>`
+                : '';
+            const legend = entries.map(entry => `
+                <div class="swatch" style="background:${entry.percent ? entry.color : 'transparent'};border-color:${entry.color}"></div>
+                <div class="item">${esc(entry.item)}</div>
+                <div class="weight">${esc(entry.weight || '—')}</div>
+                <div class="note">${esc(entry.note)}</div>`).join('');
+            const overflow = total > 100
+                ? `<div class="syllabus-ai-stack-hint">${esc(labels.gradingOverflow)} ${total}%</div>`
+                : '';
+            gradingHtml = `
+                <div class="syllabus-ai-stack">${segments}${rest}</div>
+                ${overflow}
+                <div class="syllabus-ai-grading">${legend}</div>`;
         } else if (summary.grading.length) {
             gradingHtml = bullets(summary.grading.map(entry => {
                 const detail = [entry.weight, entry.note].filter(Boolean).join('，');

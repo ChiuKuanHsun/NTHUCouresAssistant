@@ -168,7 +168,7 @@ const NthuCourseHelperUI = {
         const button = document.createElement('button');
         button.className = 'nthu-helper-search-btn';
         button.type = 'button'; // 避免觸發 form submit
-        button.innerHTML = '🔍';
+        button.innerHTML = NthuIcons.svg('search', 12);
         button.title = '查詢課程評價';
         button.dataset.index = index;
         return button;
@@ -179,7 +179,7 @@ const NthuCourseHelperUI = {
         const button = document.createElement('button');
         button.className = 'nthu-helper-grade-btn';
         button.type = 'button'; // 避免觸發 form submit
-        button.innerHTML = '📊';
+        button.innerHTML = NthuIcons.svg('chart', 12);
         button.title = '查詢歷年成績分佈（等級制平均值／標準差）';
         button.dataset.index = index;
         return button;
@@ -190,7 +190,7 @@ const NthuCourseHelperUI = {
         const button = document.createElement('button');
         button.className = 'nthu-helper-ai-btn';
         button.type = 'button'; // 避免觸發 form submit
-        button.innerHTML = '✨';
+        button.innerHTML = NthuIcons.svg('sparkle', 12);
         button.title = 'AI 統整課程大綱（評分方式、作業考試、AI 使用限制…）';
         button.dataset.index = index;
         return button;

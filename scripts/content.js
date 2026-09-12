@@ -357,14 +357,14 @@ async function initSyllabusPage() {
     launcher.type = 'button';
     launcher.className = 'nthu-helper-syllabus-ai-launcher';
     launcher.title = 'AI 統整這份課程大綱';
-    launcher.innerHTML = '<span class="icon">✨</span><span class="label">AI 統整</span><span class="dot"></span>';
+    launcher.innerHTML = `${NthuIcons.svg('sparkle', 15)}<span class="label">AI 統整</span><span class="dot"></span>`;
 
     const drawer = document.createElement('aside');
     // 沿用 .nthu-helper-syllabus-ai-panel：renderSyllabusAIBody 靠這個 class 找到「重新產生」按鈕來鎖
     drawer.className = 'nthu-helper-syllabus-ai-panel nthu-helper-syllabus-ai-drawer';
     drawer.innerHTML = `
         <div class="panel-header">
-            <h2>✨ AI 大綱統整</h2>
+            <h2>${NthuIcons.svg('sparkle', 17)}AI 大綱統整</h2>
             <button type="button" class="syllabus-ai-action syllabus-ai-regenerate">重新產生</button>
             <button type="button" class="syllabus-ai-action syllabus-ai-prefs">偏好設定</button>
             <button type="button" class="syllabus-ai-close" title="關閉 (Esc)">&times;</button>

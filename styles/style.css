@@ -491,8 +491,18 @@ input:checked + .slider:before {
   line-height: 18px;
   text-align: center;
   opacity: 0.5;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, color 0.2s, border-color 0.2s;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+}
+.nthu-helper-search-btn:hover,
+.nthu-helper-grade-btn:hover,
+.nthu-helper-ai-btn:hover {
+  color: #3d32a0;
+  border-color: #3d32a0;
 }
 /* 成績按鈕排在查詢按鈕左邊，AI 按鈕再往左 */
 .nthu-helper-grade-btn {
@@ -907,9 +917,8 @@ td:hover .nthu-helper-ai-btn {
     text-align: center;
     white-space: nowrap;
 }
+/* 這裡的 .btn2 是擴充功能自己畫的 <button>，外觀跟課程表格內的原生按鈕同一套（見下方「原生按鈕」區） */
 .saved-courses-table .action-cell .btn2 {
-    font-size: 12px;
-    padding: 4px 8px;
     margin: 0 2px;
 }
 .saved-courses-table .ge-priority-input {
@@ -917,8 +926,8 @@ td:hover .nthu-helper-ai-btn {
     padding: 4px;
     font-size: 12px;
     text-align: center;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid #c9d4f0;
+    border-radius: 6px;
 }
 /* 讓 modal 內的按鈕和書籤能正常顯示 */
 .saved-courses-table .action-cell .bookmark {
@@ -1228,16 +1237,22 @@ td:hover .nthu-helper-ai-btn {
     color: #888;
     padding: 20px !important;
 }
+/* 移除：白底紅框，hover 才填滿，跟其他按鈕同一套形狀 */
 .saved-courses-table .remove-btn {
-    padding: 4px 8px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    background-color: #fff;
+    color: #c8323f;
+    border: 1px solid #c8323f;
+    border-radius: 6px;
     cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
 }
 .saved-courses-table .remove-btn:hover {
-    background-color: #c82333;
+    background-color: #c8323f;
+    color: #fff;
 }
 #T1 {
   margin-bottom: 85px;
@@ -1544,41 +1559,65 @@ td:hover .nthu-helper-ai-btn {
         grid-template-columns: 1fr;
     }
 }
-/* 評分方式：項目／比例條／百分比 */
+/* 評分方式：一條 100% 堆疊橫條，各段一色；下方是圖例清單 */
+.syllabus-ai-stack {
+    display: flex;
+    height: 26px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #eef0f7;
+    margin: 4px 0 10px;
+}
+.syllabus-ai-stack .segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    overflow: hidden;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.55); /* 段與段之間的細白線 */
+}
+/* 大綱沒交代的比例：斜紋灰 */
+.syllabus-ai-stack .segment.rest {
+    background: repeating-linear-gradient(135deg, #e4e7ef 0 6px, #f4f5f9 6px 12px);
+}
+.syllabus-ai-stack-hint {
+    margin: -4px 0 8px;
+    font-size: 12px;
+    color: #a05a00;
+}
 .syllabus-ai-grading {
     display: grid;
-    grid-template-columns: max-content 1fr max-content;
-    gap: 6px 12px;
-    align-items: center;
+    grid-template-columns: 12px max-content max-content 1fr;
+    gap: 5px 10px;
+    align-items: baseline;
+}
+.syllabus-ai-grading .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 2px solid transparent;
+    box-sizing: border-box;
+    align-self: center;
 }
 .syllabus-ai-grading .item {
     font-size: 13.5px;
     color: #222;
 }
-.syllabus-ai-grading .bar {
-    height: 8px;
-    background: #eef0f7;
-    border-radius: 4px;
-    overflow: hidden;
-}
-.syllabus-ai-grading .bar span {
-    display: block;
-    height: 100%;
-    background: linear-gradient(90deg, #7c8fff, #3d32a0);
-    border-radius: 4px;
-}
 .syllabus-ai-grading .weight {
     font-size: 13px;
     font-weight: bold;
     color: #3d32a0;
-    min-width: 3em;
     text-align: right;
 }
 .syllabus-ai-grading .note {
-    grid-column: 1 / -1;
-    margin-top: -4px;
     font-size: 12px;
     color: #666;
+    min-width: 0;
 }
 .syllabus-ai-grading-notes {
     margin-top: 8px !important;
@@ -1728,4 +1767,83 @@ body.nthu-helper-syllabus-ai-open {
 /* 抽屜比 modal 窄，卡片一律單欄 */
 .nthu-helper-syllabus-ai-drawer .syllabus-ai-grid {
     grid-template-columns: 1fr;
+}
+
+/* --- SVG 圖示：跟文字同行時垂直置中，並跟文字留一點距離 --- */
+.nthu-icon {
+    flex: none;
+    vertical-align: -0.2em;
+}
+h2 > .nthu-icon,
+.syllabus-ai-action > .nthu-icon,
+.saved-courses-table .ai-btn > .nthu-icon {
+    margin-right: 5px;
+}
+.nthu-helper-syllabus-ai-launcher > .nthu-icon {
+    margin-right: 0;
+}
+.preference-reveal {
+    display: inline-flex;
+    align-items: center;
+    color: #555;
+}
+.saved-courses-table .ai-btn {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* --- 課程表格的原生按鈕（加選／大綱）與暫存清單的按鈕：統一外觀 ---
+   原生的是 <input type="button" class="btn|btn2">（預排系統 .btn、加選系統 .btn2），
+   只挑 value 是加選／Syllabus 的那幾顆改，關鍵字查詢、確定 GO 那些不動。
+   加選是主要動作 → 實心主色；大綱、AI 是次要 → 白底描邊。 */
+#T1 input[type="button"][value*="add" i],
+#T1 input[type="button"][value*="syllabus" i],
+.saved-courses-table .action-cell .btn2 {
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    line-height: 1.4;
+    border: 1px solid #3d32a0;
+    border-radius: 6px;
+    background-color: #fff;
+    color: #3d32a0;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+#T1 input[type="button"][value*="syllabus" i]:hover,
+.saved-courses-table .action-cell .syllabus-btn:hover,
+.saved-courses-table .action-cell .ai-btn:hover {
+    background-color: #e8f0fe;
+}
+/* 加選：實心 */
+#T1 input[type="button"][value*="add" i],
+.saved-courses-table .action-cell .add-course-btn {
+    background-color: #3d32a0;
+    color: #fff;
+}
+#T1 input[type="button"][value*="add" i]:hover,
+.saved-courses-table .action-cell .add-course-btn:hover {
+    background-color: #2f2680;
+    box-shadow: 0 2px 6px rgba(61, 50, 160, 0.3);
+}
+#T1 input[type="button"][value*="add" i]:active,
+.saved-courses-table .action-cell .add-course-btn:active {
+    box-shadow: none;
+}
+/* 通識課的志願序輸入框（加選鈕旁邊那格） */
+#T1 tbody td:first-child input[type="text"] {
+    width: 44px;
+    padding: 4px;
+    font-size: 12px;
+    text-align: center;
+    border: 1px solid #c9d4f0;
+    border-radius: 6px;
+    margin-right: 4px;
+}
+#T1 tbody td:first-child input[type="text"]:focus {
+    outline: none;
+    border-color: #3d32a0;
 }

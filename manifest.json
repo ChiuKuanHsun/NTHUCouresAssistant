@@ -33,6 +33,7 @@
         "https://nthucourseselectiontemplate.pages.dev/*"
       ],
       "js": [
+        "scripts/icons.js",
         "scripts/prefs.js",
         "scripts/modal.js",
         "scripts/parser.js",

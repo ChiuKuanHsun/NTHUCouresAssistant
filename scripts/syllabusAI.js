@@ -95,25 +95,29 @@ const NthuSyllabusAI = {
             overview: '課程概要', grading: '評分方式', assessments: '作業與考試', materials: '教材與參考書',
             prerequisites: '先修要求', format: '上課方式與規定', aiPolicy: 'AI 使用限制', misc: '其他資訊',
             tips: '給選課者的提示', empty: '大綱未提及', sourcePdf: 'PDF 大綱', sourceText: '文字大綱',
-            cached: '快取', disclaimer: 'AI 產生的內容可能有誤或遺漏，請以原始大綱為準。'
+            cached: '快取', disclaimer: 'AI 產生的內容可能有誤或遺漏，請以原始大綱為準。',
+            gradingRest: '大綱未說明', gradingOverflow: '大綱所列配分合計超過 100%，圖中已按比例縮放：'
         },
         'en': {
             overview: 'Overview', grading: 'Grading', assessments: 'Assignments & Exams', materials: 'Textbooks & References',
             prerequisites: 'Prerequisites', format: 'Format & Rules', aiPolicy: 'AI Usage Policy', misc: 'Other Information',
             tips: 'Tips for Students', empty: 'Not mentioned in the syllabus', sourcePdf: 'PDF syllabus', sourceText: 'Text syllabus',
-            cached: 'cached', disclaimer: 'AI-generated content may contain errors or omissions. Refer to the original syllabus.'
+            cached: 'cached', disclaimer: 'AI-generated content may contain errors or omissions. Refer to the original syllabus.',
+            gradingRest: 'Not specified', gradingOverflow: 'Listed weights add up to more than 100%; the bar is scaled:'
         },
         'ja': {
             overview: '授業概要', grading: '成績評価', assessments: '課題と試験', materials: '教科書・参考書',
             prerequisites: '履修条件', format: '授業形式と規則', aiPolicy: 'AI 利用ポリシー', misc: 'その他',
             tips: '履修のヒント', empty: 'シラバスに記載なし', sourcePdf: 'PDF シラバス', sourceText: 'テキスト',
-            cached: 'キャッシュ', disclaimer: 'AI が生成した内容には誤りや漏れがある可能性があります。原本のシラバスを確認してください。'
+            cached: 'キャッシュ', disclaimer: 'AI が生成した内容には誤りや漏れがある可能性があります。原本のシラバスを確認してください。',
+            gradingRest: '記載なし', gradingOverflow: '配分の合計が 100% を超えるため、比率で縮小表示：'
         },
         'ko': {
             overview: '강의 개요', grading: '성적 평가', assessments: '과제 및 시험', materials: '교재 및 참고자료',
             prerequisites: '선수 과목', format: '수업 방식 및 규정', aiPolicy: 'AI 사용 정책', misc: '기타 정보',
             tips: '수강 팁', empty: '강의계획서에 언급 없음', sourcePdf: 'PDF 강의계획서', sourceText: '텍스트',
-            cached: '캐시', disclaimer: 'AI가 생성한 내용은 오류나 누락이 있을 수 있습니다. 원본 강의계획서를 확인하세요.'
+            cached: '캐시', disclaimer: 'AI가 생성한 내용은 오류나 누락이 있을 수 있습니다. 원본 강의계획서를 확인하세요.',
+            gradingRest: '명시되지 않음', gradingOverflow: '비중 합계가 100%를 초과하여 비율로 축소 표시:'
         }
     },
 
