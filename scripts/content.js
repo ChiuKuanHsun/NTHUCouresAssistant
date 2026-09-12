@@ -344,6 +344,47 @@ function openSyllabusAIModal(course, originRect) {
 }
 
 /**
+ * 大綱頁「任課教師」那格：把藏在「more information」彈窗裡的 email 直接顯示出來並套上 mailto。
+ *
+ * 那個連結是 overlib 彈窗，內容寫死在 onclick 裡，格式固定：
+ *   overlib('張三(CHANG, SAN), email: a@b.c<br>李四(LI, SI), email: d@e.f', CAPTION, ...)
+ * 多位教師用 <br> 分隔；指導教授之類的課 email 會是空的。
+ */
+function injectInstructorEmails() {
+    const link = document.getElementById('more_info_link');
+    if (!link) return;
+    const cell = link.closest('td');
+    const match = (link.getAttribute('onclick') || '').match(/overlib\('((?:[^'\\]|\\.)*)'/);
+    if (!cell || !match) return;
+
+    const instructors = match[1]
+        .replace(/\\'/g, "'")
+        .split(/<br\s*\/?>/i)
+        .map(entry => {
+            const parts = entry.match(/^\s*(.*?)\s*,\s*email\s*:\s*(\S*)\s*$/i);
+            return parts
+                ? { name: parts[1], email: /^[^@\s]+@[^@\s]+$/.test(parts[2]) ? parts[2] : '' }
+                : { name: entry.trim(), email: '' };
+        })
+        .filter(entry => entry.name);
+    if (!instructors.length) return;
+
+    const esc = (value) => NthuCourseModal.escapeHtml(value);
+    const rows = instructors.map(({ name, email }) => `
+        <div class="nthu-helper-instructor">
+            <span class="name">${esc(name)}</span>
+            ${email
+                ? `<a class="nthu-helper-mail" href="mailto:${esc(email)}" title="寄信給 ${esc(name)}">${NthuIcons.svg('mail', 13)}${esc(email)}</a>`
+                : ''}
+        </div>`).join('');
+
+    // 原本的內容是「姓名<br>more information」；換成每位教師一列（姓名 + email），
+    // more information 連結保留在最後，以防彈窗裡還有別的資訊
+    cell.innerHTML = rows;
+    cell.appendChild(link);
+}
+
+/**
  * 大綱視窗（common/Syllabus/1.php）本身：右上角放一顆小按鈕，點了從右側滑出抽屜。
  * 不直接把摘要塞在頁面最上面，原始大綱才是這頁的主角；抽屜跟原文並排，方便對照。
  * 這頁的大綱就在眼前，直接拿 document 解析，不必再連線一次。
@@ -351,6 +392,8 @@ function openSyllabusAIModal(course, originRect) {
  */
 async function initSyllabusPage() {
     const parsed = NthuSyllabusAI.parseSyllabusDoc(document);
+    // 教師 email 不需要 API key，先做；放在 parse 之後，parsed.teacher 才不會混進 email
+    injectInstructorEmails();
     if (!parsed.id) return;
 
     const launcher = document.createElement('button');
