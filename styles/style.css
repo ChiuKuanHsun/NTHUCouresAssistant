@@ -1207,10 +1207,6 @@ td:hover .nthu-helper-ai-btn {
     border: 1px solid #ccc;
     border-radius: 4px;
 }
-/* API key 的遮罩：用 CSS 打點，不用 type="password"，才不會觸發密碼管理員 */
-.preference-control input.preference-masked {
-    -webkit-text-security: disc;
-}
 .preference-control input:focus {
     outline: none;
     border-color: #658487;
@@ -1223,7 +1219,7 @@ td:hover .nthu-helper-ai-btn {
     border-radius: 4px;
     cursor: pointer;
 }
-.preference-reveal {
+.preference-clear {
     padding: 4px 6px;
     background: #fff;
     border: 1px solid #ccc;
@@ -1782,10 +1778,17 @@ h2 > .nthu-icon,
 .nthu-helper-syllabus-ai-launcher > .nthu-icon {
     margin-right: 0;
 }
-.preference-reveal {
+.preference-clear {
     display: inline-flex;
     align-items: center;
     color: #555;
+}
+.preference-clear[hidden] {
+    display: none;
+}
+.preference-clear:hover {
+    color: #c0392b;
+    border-color: #c0392b;
 }
 /* 加選／大綱／AI 都用同樣的盒模型與高度，並排時才會對齊 */
 .saved-courses-table .action-cell .btn2 {

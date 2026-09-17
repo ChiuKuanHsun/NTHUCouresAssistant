@@ -176,24 +176,29 @@ const NthuCourseModal = {
             }
 
             // 文字／機密輸入：離開欄位或按 Enter 才儲存（change 事件）。
-            // 機密欄位不用 type="password"：Chrome 看到就會跳密碼管理員要幫你存，
-            // 改用一般文字框加 CSS 遮罩（.preference-masked），並標記讓第三方管理員略過。
+            // 機密欄位（API key）永遠不把已存的值放進 DOM：這個視窗掛在 ccxp 的頁面上，
+            // 頁面 script 讀得到 input.value。已設定時欄位留空、placeholder 只露後 4 碼，
+            // 使用者貼新值就換掉，要清掉用旁邊的按鈕。不用 type="password"，
+            // Chrome 看到就會跳密碼管理員要幫你存；另加標記讓第三方管理員略過。
             if (item.type === 'text' || item.type === 'secret') {
                 const isSecret = item.type === 'secret';
-                const reveal = isSecret
-                    ? `<button type="button" class="preference-reveal" title="顯示／隱藏">${NthuIcons.svg('eye', 15)}</button>`
+                const hasSecret = isSecret && !!prefs[item.key];
+                const clear = isSecret
+                    ? `<button type="button" class="preference-clear" title="清除已存的 key" ${hasSecret ? '' : 'hidden'}>${NthuIcons.svg('trash', 15)}</button>`
                     : '';
+                const placeholder = hasSecret
+                    ? this.describeSecret(prefs[item.key])
+                    : (item.placeholder || '');
                 return `
                     <div class="preference-item">
                         ${text}
                         <div class="preference-control">
                             <input type="text" data-pref-key="${item.key}"
-                                   class="${isSecret ? 'preference-masked' : ''}"
-                                   value="${this.escapeHtml(prefs[item.key] || '')}"
-                                   placeholder="${this.escapeHtml(item.placeholder || '')}"
+                                   value="${isSecret ? '' : this.escapeHtml(prefs[item.key] || '')}"
+                                   placeholder="${this.escapeHtml(placeholder)}"
                                    autocomplete="off" spellcheck="false"
-                                   ${isSecret ? 'data-lpignore="true" data-1p-ignore data-bwignore' : ''}>
-                            ${reveal}
+                                   ${isSecret ? `data-secret data-secret-placeholder="${this.escapeHtml(item.placeholder || '')}" data-lpignore="true" data-1p-ignore data-bwignore` : ''}>
+                            ${clear}
                         </div>
                     </div>`;
             }
@@ -256,12 +261,15 @@ const NthuCourseModal = {
             return input.value.trim();
         };
 
-        // API key 的顯示／隱藏切換
+        // 機密欄位：清除按鈕直接存空字串，並把 placeholder 換回未設定的提示
         list.addEventListener('click', (event) => {
-            const button = event.target.closest('.preference-reveal');
+            const button = event.target.closest('.preference-clear');
             if (!button) return;
-            const masked = button.parentElement.querySelector('input').classList.toggle('preference-masked');
-            button.innerHTML = NthuIcons.svg(masked ? 'eye' : 'eyeOff', 15);
+            const input = button.parentElement.querySelector('input');
+            input.value = '';
+            input.placeholder = input.dataset.secretPlaceholder;
+            button.hidden = true;
+            onChangeCallback(input.dataset.prefKey, '', true);
         });
 
         // input：滑桿拖曳中的即時預覽（不寫入儲存）
@@ -274,7 +282,16 @@ const NthuCourseModal = {
         list.addEventListener('change', (event) => {
             const input = event.target;
             if (!['INPUT', 'SELECT'].includes(input.tagName) || !input.dataset.prefKey) return;
-            onChangeCallback(input.dataset.prefKey, readValue(input), true);
+            const value = readValue(input);
+            // 機密欄位：空值不算「清除」（只是點進去又離開），清除要按旁邊的按鈕；
+            // 存好之後立刻把欄位清空，key 不留在 DOM 裡
+            if ('secret' in input.dataset) {
+                if (!value) return;
+                input.value = '';
+                input.placeholder = this.describeSecret(value);
+                input.parentElement.querySelector('.preference-clear').hidden = false;
+            }
+            onChangeCallback(input.dataset.prefKey, value, true);
         });
         // 文字欄位按 Enter 直接定案，不必先點到別處
         list.addEventListener('keydown', (event) => {
@@ -288,6 +305,11 @@ const NthuCourseModal = {
         modalOverlay.addEventListener('click', (event) => {
             if (event.target === modalOverlay) this.close();
         });
+    },
+
+    // 已設定的 API key 只露後 4 碼，讓使用者確認是哪一把、又不把整串放進頁面
+    describeSecret(value) {
+        return `已設定 …${String(value).slice(-4)}（貼上新值可更換）`;
     },
 
     // 表格內容來自伺服器回傳的 HTML，插進 innerHTML 前一律逃脫
